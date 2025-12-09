@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Beautiful Calendar",
+  "version": "1.0.0",
+  "description": "A beautiful, feature-rich calendar extension for Chrome with event management",
+  "permissions": [
+    "storage",
+    "tabs",
+    "alarms",
+    "notifications"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Beautiful Calendar",
+    "default_icon": {
+      "16": "images/logo.png",
+      "48": "images/logo.png",
+      "128": "images/logo.png"
+    }
+  },
+  "icons": {
+    "16": "images/logo.png",
+    "48": "images/logo.png",
+    "128": "images/logo.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

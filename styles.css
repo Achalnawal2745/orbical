@@ -1,0 +1,1394 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --accent: #8b5cf6;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
+    --border: #e2e8f0;
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+    /* Event Colors */
+    --color-blue: #3b82f6;
+    --color-red: #ef4444;
+    --color-green: #10b981;
+    --color-purple: #a855f7;
+    --color-yellow: #f59e0b;
+}
+
+body.dark-theme {
+    /* "Glossy Blue/Space" Theme (Restored & Enhanced) */
+    --bg-primary: #0b0c15;
+    --bg-secondary: #151621;
+    --bg-tertiary: #1e1f2e;
+    --border: #2d2e42;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+
+    --primary: #6366f1;
+    /* Indigo/Purple Neon */
+    --primary-hover: #4f46e5;
+    --accent: #8b5cf6;
+    --shadow-lg: 0 25px 50px -12px rgba(15, 23, 42, 0.7);
+
+    /* Glass Effect Vars */
+    --glass-bg: rgba(21, 22, 33, 0.7);
+    --glass-border: rgba(99, 102, 241, 0.2);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    overflow: hidden;
+}
+
+.app {
+    width: 600px;
+    height: 600px;
+    background: var(--bg-primary);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Header */
+.header {
+    padding: 16px 20px;
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.month-title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+#todayBtn {
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+#todayBtn:hover {
+    background: rgba(99, 102, 241, 0.3);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    transform: translateY(-1px);
+}
+
+.header-spacer {
+    flex: 1;
+}
+
+.icon-btn,
+.text-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.icon-btn:hover,
+.text-btn:hover {
+    color: var(--text-primary);
+}
+
+/* Views */
+.views-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(circle at top right, #1e1b4b 0%, #0b0c15 60%);
+}
+
+.view {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s;
+    overflow-y: auto;
+}
+
+.view.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+}
+
+/* MONTH VIEW */
+.calendar-container {
+    padding: 20px;
+}
+
+/* MONTH GRID - Refined Space Theme */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    row-gap: 16px;
+    column-gap: 4px;
+    margin-top: 10px;
+}
+
+.weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    /* Highlight Weekdays (Cyan) */
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Today Highlight (Distinct from Selected) */
+.day.today {
+    border: 1px solid var(--primary);
+    background: rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+}
+
+.day.today .day-number {
+    color: white;
+    font-weight: 700;
+}
+
+.day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 10px;
+    border-radius: 50%;
+    /* Circular hover/active */
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.day:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Selected Day = Glowing Orb */
+.day.selected {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+    color: white;
+    border: none;
+}
+
+.day.selected .day-number {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.day-number {
+    font-size: 15px;
+    color: var(--text-primary);
+    z-index: 2;
+}
+
+.day.other-month .day-number {
+    color: var(--text-tertiary);
+    opacity: 0.3;
+}
+
+/* Event Dots - Neon Style */
+.day-events {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    position: absolute;
+    bottom: 8px;
+}
+
+.event-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    box-shadow: 0 0 5px currentColor;
+}
+
+.event-dot.blue {
+    background: #06b6d4;
+    color: #06b6d4;
+}
+
+/* Cyan */
+.event-dot.red {
+    background: #f472b6;
+    color: #f472b6;
+}
+
+/* Pink */
+.event-dot.green {
+    background: #34d399;
+    color: #34d399;
+}
+
+/* Emerald */
+.event-dot.purple {
+    background: #c084fc;
+    color: #c084fc;
+}
+
+/* Violet */
+
+/* BOTTOM NAV - Active Pill Design */
+.bottom-nav {
+    height: 80px;
+    /* Taller for floating look */
+    background: #0b0c15;
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    z-index: 100;
+    padding-bottom: 10px;
+    /* Lift icons slightly */
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.7;
+    transition: 0.2s;
+    width: 60px;
+}
+
+.nav-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Active State: Purple Pill Background behind Icon */
+.nav-item.active {
+    opacity: 1;
+    color: var(--primary);
+}
+
+.nav-item.active .nav-icon {
+    width: 44px;
+    height: 44px;
+    /* Larger glowing circle */
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+    color: white;
+    margin-bottom: -10px;
+    /* Adjust spacing since icon got bigger */
+}
+
+.nav-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+    border-bottom: 2px solid transparent;
+    /* Stabilize height */
+}
+
+.nav-item.active .nav-text {
+    color: var(--primary);
+}
+
+/* FOCUS View (Space Carousel) */
+.focus-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    height: 100%;
+    padding-top: 20px;
+    background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.15), transparent 70%);
+    /* Space Glow */
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.digital-clock {
+    font-family: 'Inter', monospace;
+    font-size: 36px;
+    font-weight: 700;
+    color: white;
+    margin-top: 8px;
+    margin-bottom: 24px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 15px rgba(99, 102, 241, 0.6), 0 0 30px rgba(139, 92, 246, 0.4);
+}
+
+/* 1. Date Header */
+/* 1. Date Header */
+.focus-header {
+    margin-bottom: 24px;
+    text-align: center;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.focus-header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 4px;
+    letter-spacing: -1px;
+    text-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+}
+
+.focus-header p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.focus-nav-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
+.focus-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.1);
+}
+
+/* 2. Carousel Container */
+/* 2. Carousel Container */
+.focus-carousel {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    padding: 0 40px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 40px;
+    /* Space for shadows */
+    scrollbar-width: none;
+    /* Hide scrollbar */
+    /* Removed justify-content: center to prevent left-clipping */
+}
+
+.focus-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+/* Force first card to be accessible */
+.focus-carousel::after {
+    content: '';
+    flex: 0 0 20px;
+}
+
+/* Right padding hack */
+
+/* 3. Event Cards */
+.focus-card {
+    flex: 0 0 260px;
+    /* Fixed width cards */
+    height: 340px;
+    scroll-snap-align: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 32px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+    /* Center single items if flex container allows */
+}
+
+/* Card Active/Hover State */
+.focus-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Dynamic Border Glow based on Event Color */
+.focus-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 32px;
+    padding: 1px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+.focus-card.blue {
+    border-bottom: 2px solid #3b82f6;
+    box-shadow: 0 10px 40px rgba(59, 130, 246, 0.2);
+}
+
+.focus-card.purple {
+    border-bottom: 2px solid #a855f7;
+    box-shadow: 0 10px 40px rgba(168, 85, 247, 0.2);
+}
+
+.focus-card.red {
+    border-bottom: 2px solid #ef4444;
+    box-shadow: 0 10px 40px rgba(239, 68, 68, 0.2);
+}
+
+.focus-card.green {
+    border-bottom: 2px solid #10b981;
+    box-shadow: 0 10px 40px rgba(16, 185, 129, 0.2);
+}
+
+/* Card Content */
+.card-time {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.card-icon {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.card-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+    line-height: 1.2;
+    margin-top: auto;
+    margin-bottom: 12px;
+}
+
+.card-desc {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+}
+
+/* Empty State Card */
+.focus-card.empty {
+    border-color: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.empty-icon {
+    color: var(--text-tertiary);
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+/* ORBITAL WEEK VIEW (Refined Flex Layout) */
+.orbital-wrapper-user {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    position: relative;
+}
+
+/* 1. Bubbles Area (Top Half) */
+.orbital-container {
+    flex: 1;
+    /* Takes remaining space */
+    min-height: 320px;
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    /* Move glow here so it stays with bubbles */
+}
+
+/* Glow Effect */
+.orbital-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    background: var(--primary);
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* 2. Events Sheet (Bottom Half - Fixed Height) */
+.orbital-sheet {
+    height: 50%;
+    /* STRICT split */
+    background: #0f101a;
+    border-radius: 24px 24px 0 0;
+    position: relative;
+    z-index: 20;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 20px 80px 20px;
+    /* Bottom padding for Nav space */
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    align-self: center;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+
+.sheet-header-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 4px;
+    flex-shrink: 0;
+}
+
+.sheet-header-sub {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+
+/* Scrollable List */
+.sheet-events-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 4px;
+    padding-bottom: 100px;
+    /* Ensure last item is visible */
+}
+
+.sheet-events-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sheet-events-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+/* Fix overlapping FAB */
+.fab-user {
+    position: absolute;
+    bottom: 85px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.fab-user:active {
+    transform: scale(0.95);
+}
+
+/* Keyframes for JS Animation */
+.user-bubble {
+    transition: all 0.3s;
+}
+
+/* Smooth movement */
+.user-bubble.pop-in {
+    animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.user-bubble.pop-out {
+    animation: popOut 0.3s ease-in forwards;
+}
+
+@keyframes popIn {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+
+    80% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes popOut {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+    }
+}
+
+/* ORBITAL WEEK VIEW (Refined) */
+.orbital-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Date Bubbles Area */
+.orbital-date-area {
+    flex: 1;
+    position: relative;
+    min-height: 320px;
+    background: radial-gradient(circle at 50% 120%, rgba(99, 102, 241, 0.15), transparent 70%);
+}
+
+/* Bubble Styles - MATCH JS CLASS NAME .user-bubble */
+.user-bubble {
+    position: absolute;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 5;
+    /* Spingy float */
+    animation: floatBubble 6s ease-in-out infinite;
+}
+
+.user-bubble:hover {
+    transform: scale(1.15);
+    background: rgba(99, 102, 241, 0.1);
+    color: white;
+    border-color: var(--primary);
+}
+
+.user-bubble.active {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    color: white;
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+    border: none;
+    z-index: 10;
+    /* transform handled by JS/popIn, but base scale: */
+    /* transform: scale(1.1); conflict with translate(-50%)? handled by popIn */
+    transform: translate(-50%, -50%) scale(1.1);
+    /* safe default */
+}
+
+.user-bubble.small {
+    width: 50px;
+    height: 50px;
+}
+
+.user-bubble.active .bubble-date-num {
+    font-size: 32px;
+    font-weight: 800;
+}
+
+.user-bubble.active .bubble-day-label {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.user-bubble.small .bubble-date-num {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.user-bubble.small .bubble-day-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Keep animation classes hooked */
+.user-bubble.pop-in {
+    animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.user-bubble.pop-out {
+    animation: popOut 0.3s ease-in forwards;
+}
+
+/* Events Sheet - Glossy Slide Up */
+.orbital-events-sheet {
+    background: rgba(11, 12, 21, 0.85);
+    /* Dark Glass */
+    backdrop-filter: blur(40px) saturate(180%);
+    border-top: 1px solid var(--glass-border);
+    border-bottom: none;
+    border-radius: 32px 32px 0 0;
+    padding: 24px;
+    height: 48%;
+    /* Slightly taller */
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.4);
+    z-index: 20;
+    position: relative;
+    animation: slideUpSpring 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    transition: height 0.3s ease;
+}
+
+.sheet-handle {
+    width: 48px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    align-self: center;
+    margin-bottom: 20px;
+}
+
+.selected-day-header {
+    font-size: 20px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 4px;
+    text-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+}
+
+.month-title {
+    font-size: 16px;
+    font-weight: 700;
+    flex: 1;
+    text-align: center;
+    color: white;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.header-clock {
+    font-family: 'Inter', sans-serif;
+    /* Clean font */
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    padding: 6px 14px;
+    /* Pill shape */
+    background: rgba(255, 255, 255, 0.03);
+    /* subtle glass */
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    /* Neon Cyan Border */
+    border-radius: 99px;
+    /* Rounded Pill */
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    /* Glowing text */
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+    /* Subtle glow */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    /* Prevent collapse */
+    flex-shrink: 0;
+}
+
+.stats-badge {
+    border-color: rgba(255, 215, 0, 0.4);
+    /* Gold Border */
+    color: #ffd700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+    font-size: 12px;
+}
+
+.event-count-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.orbital-events-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 80px;
+    padding-right: 4px;
+    /* for scrollbar space */
+}
+
+/* Hide scrollbar for aesthetics */
+.orbital-events-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.orbital-events-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.orbital-event-card {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: 0.2s;
+    animation: fadeInStagger 0.4s ease backwards;
+}
+
+.orbital-event-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    transform: translateX(4px);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.orb-pill {
+    width: 4px;
+    height: 40px;
+    border-radius: 4px;
+    box-shadow: 0 0 10px currentColor;
+}
+
+.orb-content {
+    flex: 1;
+}
+
+.orb-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 2px;
+}
+
+.orb-time {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.orb-icon {
+    color: var(--text-tertiary);
+    opacity: 0.5;
+}
+
+/* FAB */
+.fab {
+    position: absolute;
+    bottom: 90px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+    cursor: pointer;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
+.fab:hover {
+    transform: scale(1.1) rotate(90deg);
+    box-shadow: 0 10px 40px rgba(99, 102, 241, 0.6);
+}
+
+/* Bottom Nav - Fixed Color */
+.bottom-nav {
+    height: 70px;
+    /* Was still showing green artifacts. Force dark blue/purple */
+    background: #0b0c15;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    z-index: 100;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    opacity: 0.6;
+}
+
+.nav-item.active {
+    opacity: 1;
+    color: var(--primary);
+}
+
+.nav-text {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* FOCUS View (Orb) */
+.focus-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+    text-align: center;
+}
+
+.orb-circle {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    /* Fixed: Use Theme Vars/Purple instead of Green */
+    background: radial-gradient(circle at 30% 30%, var(--accent), var(--primary-hover));
+    box-shadow: 0 0 80px rgba(99, 102, 241, 0.4);
+    margin-bottom: 30px;
+    animation: pulse 4s infinite ease-in-out;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(0.95);
+    }
+
+    50% {
+        transform: scale(1.02);
+    }
+}
+
+@keyframes popIn {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 1;
+        /* Safety: visible immediately, just scale up */
+    }
+
+    70% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Animations */
+@keyframes floatBubble {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+/* Timeline Events Tweaks */
+.timeline-event {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.timeline-event:last-child {
+    border-bottom: none;
+}
+
+.timeline-bar {
+    width: 4px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    min-height: 48px;
+    background: var(--primary);
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+    /* Glow */
+}
+
+@keyframes pulseActive {
+
+    0%,
+    100% {
+        transform: scale(1.1);
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+    }
+
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 50px rgba(99, 102, 241, 0.6);
+    }
+}
+
+@keyframes slideUpSpring {
+    0% {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInStagger {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Forms & Panels - Space Glass Modal */
+.event-panel,
+.backdrop {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.event-panel.active,
+.backdrop.active {
+    display: flex;
+    opacity: 1;
+}
+
+.backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 6, 15, 0.8);
+    /* Deep dark overlay */
+    backdrop-filter: blur(5px);
+    z-index: 250;
+}
+
+.event-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    width: 90%;
+    max-width: 400px;
+    background: rgba(20, 21, 35, 0.9);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 50px rgba(99, 102, 241, 0.15);
+    border-radius: 24px;
+    z-index: 300;
+    flex-direction: column;
+    padding: 24px;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.event-panel.active {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.panel-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.5px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    background: rgba(99, 102, 241, 0.05);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+}
+
+textarea.form-input {
+    resize: none;
+    height: 80px;
+}
+
+.color-picker {
+    display: flex;
+    gap: 12px;
+}
+
+.color-picker label {
+    cursor: pointer;
+    display: block;
+    margin: 0;
+}
+
+.color-picker input {
+    display: none;
+}
+
+.color-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    position: relative;
+    transition: 0.2s;
+    border: 2px solid transparent;
+}
+
+.color-picker input:checked+.color-dot {
+    transform: scale(1.2);
+    box-shadow: 0 0 10px currentColor;
+    border-color: white;
+}
+
+.color-dot.color-blue {
+    background: #3b82f6;
+    color: #3b82f6;
+}
+
+.color-dot.color-red {
+    background: #ef4444;
+    color: #ef4444;
+}
+
+.color-dot.color-green {
+    background: #10b981;
+    color: #10b981;
+}
+
+/* Keeping greens just for events if needed, but UI is blue */
+.color-dot.color-purple {
+    background: #a855f7;
+    color: #a855f7;
+}
+
+.color-dot.color-yellow {
+    background: #f59e0b;
+    color: #f59e0b;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    border: none;
+    font-size: 14px;
+}
+
+.btn-text {
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+.btn-text:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+}
+
+/* Event Details Tweaks */
+.detail-group {
+    margin-bottom: 20px;
+}
+
+.detail-group label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-group h2 {
+    font-size: 18px;
+    color: white;
+    margin: 0;
+    word-break: break-all;
+    /* Force break even for "hhhhh..." */
+    overflow-wrap: anywhere;
+    /* Modern wrap */
+}
+
+.detail-group p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+    word-break: break-all;
+    /* Force break even for "hhhhh..." */
+    overflow-wrap: anywhere;
+    /* Modern wrap */
+}
+
+/* Danger Button */
+.btn-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+}
