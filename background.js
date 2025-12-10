@@ -26,8 +26,14 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                     let lastDate = res.lastDate || today;
 
                     if (lastDate !== today) {
+                        // END OF DAY: ARCHIVE STATS
+                        if (!stats.history) stats.history = {};
+                        stats.history[lastDate] = stats.minutesOnline; // Save yesterday's minutes
+
+                        // Reset for today
                         stats.minutesOnline = 1;
                         lastDate = today;
+
                         // Also reset notified events for new day
                         chrome.storage.local.set({ notifiedEvents: [] });
                     } else {

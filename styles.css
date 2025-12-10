@@ -1401,3 +1401,110 @@ textarea.form-input {
     background: rgba(239, 68, 68, 0.2);
     box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
 }
+
+#todayBtn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+.stats-badge {
+    color: var(--color-yellow);
+    background: rgba(245, 158, 11, 0.1);
+    /* Gold tint */
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    cursor: pointer;
+    /* Clickable */
+    transition: all 0.2s;
+}
+
+.stats-badge:hover {
+    background: rgba(245, 158, 11, 0.2);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+/* Stats & Settings Panel */
+.stats-container {
+    padding: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 16px;
+    border-radius: 16px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Simple Bar Chart */
+.chart-section h4,
+.settings-section h4 {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+}
+
+.chart-bars {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 150px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    padding: 20px 10px 10px 10px;
+    margin-bottom: 24px;
+}
+
+.chart-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+}
+
+.chart-bar-bg {
+    width: 8px;
+    height: 100px;
+    /* Max height */
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.chart-bar-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, var(--primary), var(--accent));
+    border-radius: 4px;
+    transition: height 0.5s ease;
+}
+
+.chart-date {
+    font-size: 10px;
+    color: var(--text-tertiary);
+}

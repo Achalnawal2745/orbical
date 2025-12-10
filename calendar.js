@@ -54,14 +54,25 @@ class Calendar {
         document.getElementById('nextBtn').addEventListener('click', () => this.navigate('next'));
         document.getElementById('todayBtn').addEventListener('click', () => this.goToToday());
 
-        // View Switching (Bottom Nav)
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                const view = e.currentTarget.dataset.view;
-                if (!view) return; // Ignore if settings etc
-                this.switchView(view);
-            });
+        // View Switching        // Nav Listeners
+        document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+            btn.onclick = () => this.switchView(btn.dataset.view);
         });
+
+        // Settings Button (Disabled per request - Stats only via Badge)
+        /*
+        const settingsBtn = document.getElementById('navSettings');
+        if(settingsBtn) {
+            settingsBtn.onclick = () => this.openSettingsPanel();
+        }
+        */
+
+        // **NEW: Click "Online Stats" Badge to open Stats**
+        const statsBadge = document.getElementById('onlineStats');
+        if (statsBadge) {
+            statsBadge.style.cursor = 'pointer';
+            statsBadge.onclick = () => this.openSettingsPanel();
+        }
 
         // FAB & Modals
         document.getElementById('fabBtn').addEventListener('click', () => this.openAddEventPanel());
@@ -305,6 +316,79 @@ class Calendar {
         document.getElementById('editEventBtn').onclick = () => this.editEvent(event, dateStr);
         document.getElementById('deleteEventBtn').onclick = () => this.deleteEvent(dateStr, index);
         document.getElementById('closeDetailsPanel').onclick = () => this.closeDetailsPanel();
+    }
+
+    openSettingsPanel() {
+        const panel = document.getElementById('settingsPanel');
+        const backdrop = document.getElementById('backdrop');
+
+        panel.classList.add('active');
+        backdrop.classList.add('active');
+
+        // Logic to close
+        document.getElementById('closeSettingsPanel').onclick = () => {
+            panel.classList.remove('active');
+            backdrop.classList.remove('active');
+        };
+
+        // Render Stats
+        if (typeof chrome !== 'undefined' && chrome.storage) {
+            chrome.storage.local.get(['stats'], (res) => {
+                const stats = res.stats || { minutesOnline: 0, history: {} };
+                const todayMins = stats.minutesOnline || 0;
+                const history = stats.history || {};
+
+                // 1. Calculate Average
+                const values = Object.values(history);
+                values.push(todayMins);
+                const sum = values.reduce((a, b) => a + b, 0);
+                const avg = Math.round(sum / values.length);
+
+                document.getElementById('statToday').textContent = this.formatMins(todayMins);
+                document.getElementById('statAvg').textContent = this.formatMins(avg);
+
+                // 2. Render Chart (Last 7 Days)
+                const chart = document.getElementById('statsChart');
+                chart.innerHTML = '';
+
+                const days = [];
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const dateStr = d.toLocaleDateString(); // Matches storage key format? Need to ensure exact match.
+                    // Background uses new Date().toLocaleDateString().
+                    // This creates format "12/10/2025" or similar based on locale.
+                    // Assuming user machine locale is consistent.
+
+                    const val = (i === 0) ? todayMins : (history[dateStr] || 0);
+                    const label = d.toLocaleDateString('en-US', { weekday: 'narrow' }); // M, T, W
+
+                    days.push({ label, val });
+                }
+
+                // Find max for scaling (min 60 mins for visual buffer)
+                const maxVal = Math.max(60, ...days.map(d => d.val));
+
+                days.forEach(day => {
+                    const heightPct = Math.min(100, Math.round((day.val / maxVal) * 100));
+                    chart.innerHTML += `
+                        <div class="chart-item">
+                            <div class="chart-bar-bg" title="${day.val} mins">
+                                <div class="chart-bar-fill" style="height: ${heightPct}%"></div>
+                            </div>
+                            <span class="chart-date">${day.label}</span>
+                        </div>
+                    `;
+                });
+            });
+        }
+    }
+
+    formatMins(m) {
+        if (m < 60) return `${m}m`;
+        const h = Math.floor(m / 60);
+        const min = m % 60;
+        return `${h}h ${min}m`;
     }
 
     deleteEvent(dateStr, index) {
@@ -558,6 +642,14 @@ class Calendar {
             const events = result.events || {};
             const parentId = isRepeating ? Date.now() : null; // Group ID for future use
 
+            // IF EDITING: Find and Remove the old event first (Handles date changes too)
+            if (this.currentEditId) {
+                Object.keys(events).forEach(dateKey => {
+                    events[dateKey] = events[dateKey].filter(evt => evt.id !== this.currentEditId);
+                    if (events[dateKey].length === 0) delete events[dateKey];
+                });
+            }
+
             datesToSave.forEach(dKey => {
                 if (!events[dKey]) events[dKey] = [];
 
@@ -581,6 +673,9 @@ class Calendar {
             this.events = events; // Update local cache
             chrome.storage.local.set({ events }, () => {
                 this.closePanel();
+                // Ensure edit ID is cleared
+                this.currentEditId = null;
+
                 this.render(); // Refreshes whatever view is active
 
                 // If on Focus or Week, force refresh them

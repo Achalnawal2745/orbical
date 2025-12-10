@@ -281,6 +281,49 @@
                 <!-- Events will be populated here -->
             </div>
         </div>
+
+        <!-- Settings & Stats Panel -->
+        <div class="event-panel" id="settingsPanel">
+            <div class="panel-header">
+                <h3>Stats & Settings</h3>
+                <button class="icon-btn" id="closeSettingsPanel">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="stats-container">
+                <!-- Overview Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statToday">0m</div>
+                        <div class="stat-label">Today</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statAvg">0m</div>
+                        <div class="stat-label">Daily Avg</div>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="chart-section">
+                    <h4>Last 7 Days</h4>
+                    <div class="chart-bars" id="statsChart">
+                        <!-- Bars injected by JS -->
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4>Preferences</h4>
+                    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">
+                        Click the clock to toggle 12h/24h format.
+                    </p>
+                    <!-- Future settings here -->
+                </div>
+            </div>
+        </div>
     </div>
     <script src="calendar.js"></script>
 </body>
