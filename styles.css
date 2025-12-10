@@ -1598,3 +1598,293 @@ textarea.form-input {
     position: relative;
     z-index: 2;
 }
+
+/* ========== CUSTOM DATE PICKER ========== */
+
+/* Date Picker Wrapper */
+.custom-date-picker-wrapper {
+    position: relative;
+}
+
+.date-picker-input {
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    user-select: none;
+}
+
+.date-picker-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Picker Icons */
+.picker-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    pointer-events: all;
+    z-index: 10;
+}
+
+.picker-icon:hover {
+    color: var(--primary);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.date-picker-input {
+    padding-right: 40px;
+    /* Make room for icon */
+}
+
+
+/* Dropdown Container */
+.date-picker-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 280px;
+    background: rgba(20, 20, 40, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 16px;
+    padding: 16px;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.date-picker-dropdown.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+}
+
+/* Header */
+.date-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.date-picker-month {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    flex: 1;
+}
+
+.date-picker-nav {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.date-picker-nav:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: var(--primary);
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+}
+
+/* Today Button */
+.date-picker-today-btn {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 12px;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 8px;
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.date-picker-today-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+    transform: translateY(-1px);
+}
+
+
+/* Calendar Grid */
+.date-picker-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.date-picker-weekday {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 4px;
+    font-weight: 600;
+}
+
+.date-picker-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.date-picker-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-primary);
+    position: relative;
+}
+
+.date-picker-day:hover:not(.other-month) {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.date-picker-day.other-month {
+    color: var(--text-secondary);
+    opacity: 0.3;
+    cursor: default;
+}
+
+.date-picker-day.today {
+    border: 1px solid var(--primary);
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+.date-picker-day.selected {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+    font-weight: 600;
+}
+
+.date-picker-day.selected:hover {
+    background: var(--primary);
+    transform: scale(1.05);
+}
+
+/* ========== CUSTOM TIME PICKER ========== */
+
+.time-picker-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 200px;
+    background: rgba(20, 20, 40, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 16px;
+    padding: 16px;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.time-picker-dropdown.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+}
+
+.time-picker-header {
+    margin-bottom: 12px;
+}
+
+.time-picker-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.time-picker-grid {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-picker-column {
+    flex: 1;
+}
+
+.time-picker-column-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.time-picker-scroll {
+    max-height: 150px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px;
+}
+
+.time-picker-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+
+.time-picker-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.time-picker-item {
+    padding: 8px;
+    text-align: center;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-primary);
+}
+
+.time-picker-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.time-picker-item.selected {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+    font-weight: 600;
+}
+
+.time-picker-separator {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--primary);
+}

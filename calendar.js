@@ -41,6 +41,13 @@ class Calendar {
         this.setupEventListeners();
         this.initEventFormListeners();
 
+        // Initialize Custom Date Pickers with icons
+        this.eventDatePicker = new DatePicker('eventDate', 'eventDatePicker', 'eventDateIcon');
+        this.repeatEndDatePicker = new DatePicker('repeatEndDate', 'repeatEndDatePicker', 'repeatEndDateIcon');
+
+        // Initialize Custom Time Picker with icon
+        this.eventTimePicker = new TimePicker('eventTime', 'eventTimePicker', 'eventTimeIcon');
+
         // Force Dark Theme for this specific design
         document.body.classList.add('dark-theme');
 
@@ -678,6 +685,10 @@ class Calendar {
         if (repeatEnd) repeatEnd.value = '';
         if (weekChecks) weekChecks.forEach(cb => cb.checked = false);
 
+        // Reset Date Pickers
+        if (this.eventDatePicker) this.eventDatePicker.setValue(this.formatDate(targetDate));
+        if (this.repeatEndDatePicker) this.repeatEndDatePicker.setValue('');
+
         // Reset Image Upload State
         const imgPreview = document.getElementById('imagePreview');
         const placeholder = document.querySelector('.upload-placeholder');
@@ -699,7 +710,14 @@ class Calendar {
     // New: Edit Event Mode
     editEvent(evt, dateStr) {
         this.currentEditId = evt.id;
-        document.getElementById('eventDate').value = dateStr;
+
+        // Set date using custom date picker
+        if (this.eventDatePicker) {
+            this.eventDatePicker.setValue(dateStr);
+        } else {
+            document.getElementById('eventDate').value = dateStr;
+        }
+
         document.getElementById('eventTitle').value = evt.title;
         document.getElementById('eventTime').value = evt.time;
         document.getElementById('eventDescription').value = evt.description || '';
@@ -744,7 +762,9 @@ class Calendar {
 
     saveEvent(e) {
         e.preventDefault();
-        const dateStr = document.getElementById('eventDate').value; // Start Date
+
+        // Get date from custom date picker (ISO format)
+        const dateStr = this.eventDatePicker ? this.eventDatePicker.getValue() : document.getElementById('eventDate').value;
         const title = document.getElementById('eventTitle').value;
         const time = document.getElementById('eventTime').value;
         const desc = document.getElementById('eventDescription').value;
@@ -758,7 +778,7 @@ class Calendar {
         // Recurrence Inputs
         const isRepeating = document.getElementById('repeatToggle').checked;
         const freq = document.getElementById('repeatFreq').value;
-        const untilDate = document.getElementById('repeatEndDate').value;
+        const untilDate = this.repeatEndDatePicker ? this.repeatEndDatePicker.getValue() : document.getElementById('repeatEndDate').value;
 
         // Get Selected Weekdays (0=Sun, 6=Sat)
         const weekDays = Array.from(document.querySelectorAll('.week-days-selector input:checked'))

@@ -182,7 +182,18 @@
             <form class="event-form" id="eventForm">
                 <div class="form-group">
                     <label>Date</label>
-                    <input type="date" id="eventDate" class="form-input">
+                    <div class="custom-date-picker-wrapper">
+                        <input type="text" id="eventDate" class="form-input date-picker-input"
+                            placeholder="DD:MM:YYYY (e.g., 11:12:2025)">
+                        <svg class="picker-icon" id="eventDateIcon" width="20" height="20" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <div class="date-picker-dropdown" id="eventDatePicker"></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Event Title</label>
@@ -190,7 +201,16 @@
                 </div>
                 <div class="form-group">
                     <label>Time</label>
-                    <input type="time" id="eventTime" class="form-input">
+                    <div class="custom-date-picker-wrapper">
+                        <input type="text" id="eventTime" class="form-input date-picker-input"
+                            placeholder="HH:MM (e.g., 14:30)">
+                        <svg class="picker-icon" id="eventTimeIcon" width="20" height="20" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <div class="time-picker-dropdown" id="eventTimePicker"></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Description</label>
@@ -251,7 +271,18 @@
 
                     <div class="form-group">
                         <label>Repeat Until</label>
-                        <input type="date" id="repeatEndDate" class="form-input">
+                        <div class="custom-date-picker-wrapper">
+                            <input type="text" id="repeatEndDate" class="form-input date-picker-input"
+                                placeholder="DD:MM:YYYY">
+                            <svg class="picker-icon" id="repeatEndDateIcon" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <div class="date-picker-dropdown" id="repeatEndDatePicker"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -345,6 +376,7 @@
             </div>
         </div>
     </div>
+    <script src="datepicker.js"></script>
     <script src="calendar.js"></script>
 </body>
 
