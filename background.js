@@ -87,7 +87,7 @@ function checkEvents() {
 
                 chrome.notifications.create(`evt-${evt.id}`, {
                     type: 'basic',
-                    iconUrl: 'images/icon-128.png',
+                    iconUrl: chrome.runtime.getURL('images/logo.png'),
                     title: title,
                     message: msg,
                     priority: 2
