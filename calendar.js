@@ -5,6 +5,9 @@ class Calendar {
         this.events = {}; // { "YYYY-MM-DD": [ { id, title, time, color, description } ] }
         this.currentView = 'month'; // 'month', 'week', 'focus'
 
+        // Clock Preference
+        this.is24Hour = localStorage.getItem('is24Hour') !== 'false'; // Default true
+
         // Load events then render
         this.loadEvents();
         // Assuming initTheme() is a new method or intended to be added elsewhere,
@@ -633,17 +636,43 @@ class Calendar {
         }
     }
 
+    toggleClockFormat() {
+        this.is24Hour = !this.is24Hour;
+        localStorage.setItem('is24Hour', this.is24Hour);
+        this.updateClock();
+    }
+
     updateClock() {
         const now = new Date();
-        const timeString = now.toLocaleTimeString('en-US', { hour12: false });
+        const options = {
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: !this.is24Hour
+        };
+        // Explicitly handle 24h/12h with Seconds
+        const timeString = now.toLocaleTimeString('en-US', {
+            hour12: !this.is24Hour,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
 
         // Focus Clock
         const el = document.getElementById('digitalClock');
-        if (el) el.textContent = timeString;
+        if (el) {
+            el.textContent = timeString;
+            el.onclick = () => this.toggleClockFormat();
+            el.style.cursor = "pointer";
+        }
 
         // Global Header Clock
         const globalEl = document.getElementById('globalClock');
-        if (globalEl) globalEl.textContent = timeString;
+        if (globalEl) {
+            globalEl.textContent = timeString;
+            globalEl.onclick = () => this.toggleClockFormat();
+            globalEl.style.cursor = "pointer";
+        }
 
         // Update Usage Stats (Throttle this if performance issues arise, but 1s is fine for local reads)
         if (typeof chrome !== 'undefined' && chrome.storage) {
