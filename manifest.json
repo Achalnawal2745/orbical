@@ -25,5 +25,14 @@
   },
   "background": {
     "service_worker": "background.js"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+C",
+        "mac": "Alt+C"
+      },
+      "description": "Open Beautiful Calendar"
+    }
   }
 }

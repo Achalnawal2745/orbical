@@ -18,6 +18,7 @@ Orbit Calendar is a stunning, productivity-focused calendar extension designed w
   - **Live**: "🔔 Starting Now" alerts when events begin.
   - **Catch Up**: "⚠️ You Missed" alerts if you open Chrome after an event has started.
 - **Quick Add**: Create events instantly with the floating action button.
+- **Keyboard Shortcut**: Press **Alt+C** to instantly open the calendar (Customizable in `chrome://extensions/shortcuts`).
 
 ### 📅 Views
 - **Month View**: Classic grid with "Glowing Orb" day indicators.
