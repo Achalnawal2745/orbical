@@ -36,6 +36,7 @@ class Calendar {
     init() {
         this.loadEvents();
         this.setupEventListeners();
+        this.initEventFormListeners();
 
         // Force Dark Theme for this specific design
         document.body.classList.add('dark-theme');
@@ -142,6 +143,8 @@ class Calendar {
         ];
 
         // Let's stick to the visual interaction: Horizontal scatter
+        // Positions (Relative to the .orbital-container)
+        // Center is roughly 50% left, 40% top
         // Positions (Relative to the .orbital-container)
         // Center is roughly 50% left, 40% top
         const scatter = [
@@ -309,6 +312,25 @@ class Calendar {
         this.saveEvents();
         this.closeDetailsPanel();
         this.render(); // Re-render to update list
+    }
+
+    initEventFormListeners() {
+        const toggle = document.getElementById('repeatToggle');
+        const options = document.getElementById('recurrenceOptions');
+        const freq = document.getElementById('repeatFreq');
+        const weekGroup = document.getElementById('weekDaysGroup');
+
+        if (toggle) {
+            toggle.addEventListener('change', (e) => {
+                options.style.display = e.target.checked ? 'block' : 'none';
+            });
+        }
+
+        if (freq) {
+            freq.addEventListener('change', (e) => {
+                weekGroup.style.display = e.target.value === 'weekly' ? 'block' : 'none';
+            });
+        }
     }
 
     initTheme() {
@@ -503,34 +525,103 @@ class Calendar {
 
     saveEvent(e) {
         e.preventDefault();
-        const dateVal = document.getElementById('eventDate').value;
-        const [y, m, d] = dateVal.split('-').map(Number);
-        const date = new Date(y, m - 1, d);
-        const dateStr = this.formatDate(date);
-
+        const dateStr = document.getElementById('eventDate').value; // Start Date
         const title = document.getElementById('eventTitle').value;
         const time = document.getElementById('eventTime').value;
-        const description = document.getElementById('eventDescription').value;
+        const desc = document.getElementById('eventDescription').value;
         const color = document.querySelector('input[name="color"]:checked').value;
 
-        if (!this.events[dateStr]) this.events[dateStr] = [];
+        // Recurrence Inputs
+        const isRepeating = document.getElementById('repeatToggle').checked;
+        const freq = document.getElementById('repeatFreq').value;
+        const untilDate = document.getElementById('repeatEndDate').value;
 
-        if (this.currentEditId) {
-            // UPDATE EXISTING
-            const idx = this.events[dateStr].findIndex(ev => ev.id === this.currentEditId);
-            if (idx !== -1) {
-                this.events[dateStr][idx] = { id: this.currentEditId, title, time, description, color };
-            } else {
-                this.events[dateStr].push({ id: this.currentEditId, title, time, description, color });
-            }
-        } else {
-            // CREATE NEW
-            this.events[dateStr].push({ id: Date.now(), title, time, description, color });
+        // Get Selected Weekdays (0=Sun, 6=Sat)
+        const weekDays = Array.from(document.querySelectorAll('.week-days-selector input:checked'))
+            .map(cb => parseInt(cb.value));
+
+        // Basic Validation
+        if (!title || !dateStr) return;
+
+        // 1. Determine List of Dates to Save
+        let datesToSave = [dateStr]; // Default: Just the selected date
+
+        if (isRepeating && untilDate) {
+            datesToSave = this.generateRecurringDates(dateStr, untilDate, freq, weekDays);
         }
 
-        this.saveEvents();
-        this.closePanel();
-        this.render();
+        // 2. Save Logic (Batch)
+        chrome.storage.local.get(['events'], (result) => {
+            const events = result.events || {};
+            const parentId = isRepeating ? Date.now() : null; // Group ID for future use
+
+            datesToSave.forEach(dKey => {
+                if (!events[dKey]) events[dKey] = [];
+
+                // Valid Event Object
+                const newEvent = {
+                    id: Date.now() + Math.random().toString(36).substr(2, 9),
+                    title,
+                    time,
+                    description: desc,
+                    color,
+                    parentId: parentId
+                };
+
+                // If editing single implementation, we'd replace. 
+                // For this Recurrence implementation: Always Add New.
+                // (Constraint: "Edit Series" is complex, we just "Create Series" for now)
+                events[dKey].push(newEvent);
+            });
+
+            // 3. Persist & Refresh
+            this.events = events; // Update local cache
+            chrome.storage.local.set({ events }, () => {
+                this.closePanel();
+                this.render(); // Refreshes whatever view is active
+
+                // If on Focus or Week, force refresh them
+                if (this.currentView === 'focus') this.renderFocus();
+                if (this.currentView === 'week') this.renderWeekOrbital(); // Typo fix: we have renderWeekOrbital
+            });
+        });
+    }
+
+    generateRecurringDates(start, end, freq, weekDays) {
+        let dates = [];
+        let current = new Date(start);
+        // Correct for timezone offset issues by setting time to Noon?
+        // Actually YYYY-MM-DD input is clean. Let's force "T12:00:00" to avoid rollover.
+        current.setHours(12, 0, 0, 0);
+
+        const endDate = new Date(end);
+        endDate.setHours(12, 0, 0, 0);
+
+        const startDayOfMonth = current.getDate(); // For Monthly logic
+
+        // Safety cap: 365 iterations max
+        let safety = 0;
+
+        while (current <= endDate && safety < 366) {
+            let match = false;
+
+            if (freq === 'daily') {
+                match = true;
+            } else if (freq === 'weekly') {
+                if (weekDays.includes(current.getDay())) match = true;
+            } else if (freq === 'monthly') {
+                if (current.getDate() === startDayOfMonth) match = true;
+            }
+
+            if (match) {
+                dates.push(this.formatDate(current));
+            }
+
+            // Next Day
+            current.setDate(current.getDate() + 1);
+            safety++;
+        }
+        return dates;
     }
 
     // Storage

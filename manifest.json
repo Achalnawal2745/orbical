@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Beautiful Calendar",
+  "name": "OrbiCal",
   "version": "1.0.0",
   "description": "A beautiful, feature-rich calendar extension for Chrome with event management",
   "permissions": [
@@ -11,7 +11,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Beautiful Calendar",
+    "default_title": "OrbiCal",
     "default_icon": {
       "16": "images/logo.png",
       "48": "images/logo.png",
@@ -32,7 +32,7 @@
         "default": "Alt+C",
         "mac": "Alt+C"
       },
-      "description": "Open Beautiful Calendar"
+      "description": "Open OrbiCal"
     }
   }
 }

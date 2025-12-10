@@ -196,6 +196,44 @@
                     <label>Description</label>
                     <textarea id="eventDescription" class="form-input" placeholder="Add details..."></textarea>
                 </div>
+
+                <!-- Recurrence Section -->
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="repeatToggle">
+                        <span class="label-text">Propagate / Repeat</span>
+                    </label>
+                </div>
+
+                <div class="recurrence-options" id="recurrenceOptions" style="display: none;">
+                    <div class="form-group">
+                        <label>Frequency</label>
+                        <select id="repeatFreq" class="form-input">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+
+                    <!-- Weekly Days Selector -->
+                    <div class="form-group" id="weekDaysGroup" style="display: none;">
+                        <label>Select Days</label>
+                        <div class="week-days-selector">
+                            <label><input type="checkbox" value="0">S</label>
+                            <label><input type="checkbox" value="1">M</label>
+                            <label><input type="checkbox" value="2">T</label>
+                            <label><input type="checkbox" value="3">W</label>
+                            <label><input type="checkbox" value="4">T</label>
+                            <label><input type="checkbox" value="5">F</label>
+                            <label><input type="checkbox" value="6">S</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Repeat Until</label>
+                        <input type="date" id="repeatEndDate" class="form-input">
+                    </div>
+                </div>
                 <div class="form-group">
                     <label>Color</label>
                     <div class="color-picker">
