@@ -254,27 +254,39 @@ class Calendar {
 
             events.forEach((evt, index) => {
                 const row = document.createElement('div');
-                row.className = 'timeline-event';
+                // Using both classes to support legacy styling if needed, but primary style is orbital-event-card
+                row.className = 'orbital-event-card timeline-event';
 
-                // Color mapping if needed, or default primary
+                // Add Image Background
+                if (evt.img) {
+                    row.classList.add('has-image');
+                    row.style.backgroundImage = `url(${evt.img})`;
+                    row.style.backgroundSize = 'cover';
+                    row.style.backgroundPosition = 'center';
+                }
+
+                // Interaction: View Details (with Edit/Delete options)
+                row.onclick = () => this.openDetailsPanel(evt, dateStr, index);
+
+                // Color Pill
                 const colorVar = evt.color === 'purple' ? 'var(--primary)' :
-                    evt.color === 'green' ? '#10b981' :
-                        evt.color === 'blue' ? '#3b82f6' :
-                            evt.color === 'red' ? '#ef4444' : 'var(--primary)';
+                    evt.color === 'red' ? '#ec4899' :
+                        evt.color === 'cyan' ? '#06b6d4' :
+                            evt.color === 'green' ? '#10b981' : 'var(--primary)';
 
                 row.innerHTML = `
-    <div class="timeline-bar" style="background: ${colorVar}; height: auto; min-height: 50px;"></div>
-        <div class="timeline-content">
-            <div class="t-title">${evt.title}</div>
-            <div class="t-time">${evt.time || 'All Day'}</div>
-            <div class="t-loc">${evt.description || 'No details'}</div>
-        </div>
-`;
+                    <div class="orb-pill" style="background: ${colorVar}"></div>
+                    <div style="flex:1; position:relative; z-index:2;">
+                        <h4 style="margin:0; font-size:16px; font-weight:600; color:${evt.img ? 'white' : 'var(--text-primary)'}">${evt.title}</h4>
+                        <div style="font-size:12px; color:${evt.img ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)'}; margin-top:2px; display:flex; align-items:center; gap:6px;">
+                            <span>${evt.time || 'All Day'}</span>
+                            ${evt.description ? '<span>• ' + evt.description.substring(0, 20) + (evt.description.length > 20 ? '...' : '') + '</span>' : ''}
+                        </div>
+                    </div>
+                `;
 
-                // CLICK TO VIEW DETAILS / DELETE
-                row.style.cursor = 'pointer';
-                row.addEventListener('click', () => this.openDetailsPanel(evt, dateStr, index));
-
+                // Entrance Animation
+                row.style.animationDelay = `${index * 0.1}s`;
                 list.appendChild(row);
             });
             content.appendChild(list);
@@ -288,8 +300,14 @@ class Calendar {
         const panel = document.getElementById('eventDetailsPanel');
         const details = document.getElementById('eventDetails');
 
+        let imgHTML = '';
+        if (event.img) {
+            imgHTML = `<div style="width:100%; height:150px; background:url(${event.img}) center/cover no-repeat; border-radius:12px; margin-bottom:16px;"></div>`;
+        }
+
         details.innerHTML = `
-    <div class="detail-group">
+            ${imgHTML}
+            <div class="detail-group">
                 <label>Event</label>
                 <h2>${event.title}</h2>
             </div>
@@ -418,6 +436,67 @@ class Calendar {
                 weekGroup.style.display = e.target.value === 'weekly' ? 'block' : 'none';
             });
         }
+
+        // Image Upload Listeners
+        const imgTrigger = document.getElementById('imageUploadTrigger');
+        const imgInput = document.getElementById('eventImageInput');
+        const imgPreview = document.getElementById('imagePreview');
+        const removeImgBtn = document.getElementById('removeImageBtn');
+        const placeholder = document.querySelector('.upload-placeholder');
+
+        if (imgTrigger && imgInput) {
+            imgTrigger.onclick = (e) => {
+                // Prevent triggering if clicking remove button
+                if (e.target !== removeImgBtn && !removeImgBtn.contains(e.target)) {
+                    imgInput.click();
+                }
+            };
+
+            imgInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    this.compressImage(file, (base64) => {
+                        imgPreview.src = base64;
+                        imgPreview.style.display = 'block';
+                        placeholder.style.display = 'none';
+                        removeImgBtn.style.display = 'flex';
+                    });
+                }
+            };
+
+            removeImgBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                imgInput.value = '';
+                imgPreview.src = '';
+                imgPreview.style.display = 'none';
+                placeholder.style.display = 'flex';
+                removeImgBtn.style.display = 'none';
+            };
+        }
+    }
+
+    compressImage(file, callback) {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 500;
+                const scaleSize = MAX_WIDTH / img.width;
+                const width = (img.width > MAX_WIDTH) ? MAX_WIDTH : img.width;
+                const height = (img.width > MAX_WIDTH) ? img.height * scaleSize : img.height;
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                // Compress to JPEG 0.7 quality
+                callback(canvas.toDataURL('image/jpeg', 0.7));
+            };
+        };
     }
 
     initTheme() {
@@ -533,6 +612,12 @@ class Calendar {
                 const card = document.createElement('div');
                 card.className = `focus-card ${evt.color || 'purple'}`;
 
+                // Add Image Background if exists
+                if (evt.img) {
+                    card.classList.add('has-image');
+                    card.style.backgroundImage = `url(${evt.img})`;
+                }
+
                 card.innerHTML = `
     <div class="card-time">
         <div class="card-icon"></div>
@@ -573,10 +658,39 @@ class Calendar {
         const targetDate = date || this.selectedDate || new Date();
         document.getElementById('eventDate').value = this.formatDate(targetDate);
 
-        // Clear previous inputs
         document.getElementById('eventTitle').value = '';
-        document.getElementById('eventTime').value = '';
         document.getElementById('eventDescription').value = '';
+
+        // Reset Propagate / Recurrence State
+        const repeatToggle = document.getElementById('repeatToggle');
+        const recurrenceOptions = document.getElementById('recurrenceOptions');
+        const repeatFreq = document.getElementById('repeatFreq');
+        const weekGroup = document.getElementById('weekDaysGroup');
+        const repeatEnd = document.getElementById('repeatEndDate');
+        const weekChecks = document.querySelectorAll('.week-days-selector input[type="checkbox"]');
+
+        if (repeatToggle) {
+            repeatToggle.checked = false;
+            recurrenceOptions.style.display = 'none';
+        }
+        if (repeatFreq) repeatFreq.value = 'daily';
+        if (weekGroup) weekGroup.style.display = 'none';
+        if (repeatEnd) repeatEnd.value = '';
+        if (weekChecks) weekChecks.forEach(cb => cb.checked = false);
+
+        // Reset Image Upload State
+        const imgPreview = document.getElementById('imagePreview');
+        const placeholder = document.querySelector('.upload-placeholder');
+        const removeBtn = document.getElementById('removeImageBtn');
+        const imgInput = document.getElementById('eventImageInput');
+
+        if (imgPreview) {
+            imgPreview.src = '';
+            imgPreview.style.display = 'none';
+            placeholder.style.display = 'flex';
+            removeBtn.style.display = 'none';
+            imgInput.value = ''; // Clear file selection
+        }
 
         document.getElementById('eventPanel').classList.add('active');
         document.getElementById('backdrop').classList.add('active');
@@ -589,6 +703,24 @@ class Calendar {
         document.getElementById('eventTitle').value = evt.title;
         document.getElementById('eventTime').value = evt.time;
         document.getElementById('eventDescription').value = evt.description || '';
+
+        // Handle Image
+        const imgPreview = document.getElementById('imagePreview');
+        const placeholder = document.querySelector('.upload-placeholder');
+        const removeBtn = document.getElementById('removeImageBtn');
+        const imgInput = document.getElementById('eventImageInput'); // Clear input value in case
+
+        if (evt.img) {
+            imgPreview.src = evt.img;
+            imgPreview.style.display = 'block';
+            placeholder.style.display = 'none';
+            removeBtn.style.display = 'flex';
+        } else {
+            imgPreview.src = '';
+            imgPreview.style.display = 'none';
+            placeholder.style.display = 'flex';
+            removeBtn.style.display = 'none';
+        }
 
         // Select Correct Color
         const colorRadio = document.querySelector(`input[name = "color"][value = "${evt.color}"]`);
@@ -617,6 +749,11 @@ class Calendar {
         const time = document.getElementById('eventTime').value;
         const desc = document.getElementById('eventDescription').value;
         const color = document.querySelector('input[name="color"]:checked').value;
+
+        // Image Data (Base64)
+        const imgPreview = document.getElementById('imagePreview');
+        const imgDisplay = imgPreview.style.display;
+        const eventImg = (imgDisplay !== 'none' && imgPreview.src) ? imgPreview.src : null;
 
         // Recurrence Inputs
         const isRepeating = document.getElementById('repeatToggle').checked;
@@ -660,6 +797,7 @@ class Calendar {
                     time,
                     description: desc,
                     color,
+                    img: eventImg,
                     parentId: parentId
                 };
 

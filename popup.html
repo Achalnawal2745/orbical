@@ -197,6 +197,26 @@
                     <textarea id="eventDescription" class="form-input" placeholder="Add details..."></textarea>
                 </div>
 
+                <!-- Image Upload Section -->
+                <div class="form-group">
+                    <label>Cover Image (Optional)</label>
+                    <div class="image-upload-container" id="imageUploadTrigger">
+                        <div class="upload-placeholder">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <polyline points="21 15 16 10 5 21" />
+                            </svg>
+                            <span>Click to add image</span>
+                        </div>
+                        <img id="imagePreview" src="" style="display:none;">
+                        <button type="button" class="remove-img-btn" id="removeImageBtn"
+                            style="display:none;">&times;</button>
+                    </div>
+                    <input type="file" id="eventImageInput" accept="image/*" style="display: none;">
+                </div>
+
                 <!-- Recurrence Section -->
                 <div class="form-group">
                     <label class="checkbox-label">
@@ -282,10 +302,10 @@
             </div>
         </div>
 
-        <!-- Settings & Stats Panel -->
+        <!-- Stats Panel -->
         <div class="event-panel" id="settingsPanel">
             <div class="panel-header">
-                <h3>Stats & Settings</h3>
+                <h3>Stats</h3>
                 <button class="icon-btn" id="closeSettingsPanel">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">

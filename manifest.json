@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OrbiCal",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A beautiful, feature-rich calendar extension for Chrome with event management",
   "permissions": [
     "storage",
