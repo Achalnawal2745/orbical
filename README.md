@@ -1,8 +1,8 @@
-# Orbit Calendar 🪐
+# OrbiCal 🪐
 
- **A Premium "Deep Space" Calendar Extension for Chrome, Edge, and Brave.**
+ **A Premium Calendar Extension for Chrome, Edge, and Brave.**
 
-Orbit Calendar is a stunning, productivity-focused calendar extension designed with a futuristic "Neon Glass" aesthetic. It replaces your standard calendar with a beautiful, floating orbital interface, integrated task tracking, and smart notifications.
+OrbiCal is a stunning, productivity-focused calendar extension designed with a futuristic "Neon Glass" aesthetic. It replaces your standard calendar with a beautiful, floating orbital interface, integrated task tracking, and smart notifications.
 
 ## ✨ Features
 
@@ -15,8 +15,8 @@ Orbit Calendar is a stunning, productivity-focused calendar extension designed w
 ### ⚡ Productivity Tools
 - **Chrome Usage Tracker**: Tracks your active "Focus Time" on Chrome. Smart logic pauses the timer when you switch apps. Resets daily.
 - **Smart Notifications**:
-  - **Live**: "🔔 Starting Now" alerts when events begin.
-  - **Catch Up**: "⚠️ You Missed" alerts if you open Chrome after an event has started.
+  - **Live**: " Starting Now" alerts when events begin.
+  - **Catch Up**: " You Missed" alerts if you open Chrome after an event has started.
 - **Recurring Events**: Schedule events that repeat Daily, Weekly (e.g., "Every Sat/Sun"), or Monthly.
 - **Quick Add**: Create events instantly with the floating action button.
 - **Keyboard Shortcut**: Press **Alt+C** to instantly open the calendar (Customizable in `chrome://extensions/shortcuts`).

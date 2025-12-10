@@ -90,7 +90,8 @@ function checkEvents() {
                     iconUrl: chrome.runtime.getURL('images/logo.png'),
                     title: title,
                     message: msg,
-                    priority: 2
+                    priority: 2,
+                    requireInteraction: true // Keeps notification open until user dismisses it
                 });
 
                 newNotified.push(evt.id);
