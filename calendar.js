@@ -251,18 +251,57 @@ class Calendar {
         content.appendChild(header);
 
         const dateStr = this.formatDate(date);
-        const events = this.getEventsForDay(dateStr);
+        let events = this.getEventsForDay(dateStr);
+
+        // Check if this date is in the past
+        const eventDate = new Date(dateStr);
+        const now = new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isDatePast = eventDate < today;
 
         if (events.length > 0) {
+            // Sort events by time, then separate into upcoming and past
+            const eventsWithStatus = events.map((evt, index) => {
+                let isEventPast = isDatePast;
+                let timeValue = 0;
+
+                if (evt.time) {
+                    const [hours, minutes] = evt.time.split(':').map(Number);
+                    timeValue = hours * 60 + minutes;
+
+                    if (!isEventPast && eventDate.toDateString() === now.toDateString()) {
+                        const eventDateTime = new Date();
+                        eventDateTime.setHours(hours, minutes, 0, 0);
+                        if (eventDateTime < now) {
+                            isEventPast = true;
+                        }
+                    }
+                } else {
+                    timeValue = 0; // All-day events at top
+                }
+
+                return { ...evt, originalIndex: index, isEventPast, timeValue };
+            });
+
+            // Separate and sort: upcoming first (sorted by time), then past (sorted by time)
+            const upcomingEvents = eventsWithStatus.filter(e => !e.isEventPast).sort((a, b) => a.timeValue - b.timeValue);
+            const pastEvents = eventsWithStatus.filter(e => e.isEventPast).sort((a, b) => a.timeValue - b.timeValue);
+            const sortedEvents = [...upcomingEvents, ...pastEvents];
+
             header.innerHTML += `<p class="sheet-header-sub">${events.length} events scheduled</p>`;
 
             const list = document.createElement('div');
             list.className = 'sheet-events-list';
 
-            events.forEach((evt, index) => {
+            sortedEvents.forEach((evt, displayIndex) => {
                 const row = document.createElement('div');
-                // Using both classes to support legacy styling if needed, but primary style is orbital-event-card
                 row.className = 'orbital-event-card timeline-event';
+
+                // Add past event class for styling
+                if (evt.isEventPast) {
+                    row.classList.add('past-event');
+                }
 
                 // Add Image Background
                 if (evt.img) {
@@ -270,22 +309,27 @@ class Calendar {
                     row.style.backgroundImage = `url(${evt.img})`;
                     row.style.backgroundSize = 'cover';
                     row.style.backgroundPosition = 'center';
+                    if (evt.isEventPast) {
+                        row.style.filter = 'grayscale(70%) opacity(0.6)';
+                    }
                 }
 
                 // Interaction: View Details (with Edit/Delete options)
-                row.onclick = () => this.openDetailsPanel(evt, dateStr, index);
+                row.onclick = () => this.openDetailsPanel(evt, dateStr, evt.originalIndex);
 
                 // Color Pill
-                const colorVar = evt.color === 'purple' ? 'var(--primary)' :
-                    evt.color === 'red' ? '#ec4899' :
-                        evt.color === 'cyan' ? '#06b6d4' :
-                            evt.color === 'green' ? '#10b981' : 'var(--primary)';
+                const colorVar = evt.color === 'purple' ? '#a855f7' :
+                    evt.color === 'blue' ? '#3b82f6' :
+                        evt.color === 'red' ? '#ef4444' :
+                            evt.color === 'yellow' ? '#fbbf24' :
+                                evt.color === 'cyan' ? '#06b6d4' :
+                                    evt.color === 'green' ? '#10b981' : '#a855f7'; // default purple
 
                 row.innerHTML = `
-                    <div class="orb-pill" style="background: ${colorVar}"></div>
+                    <div class="orb-pill ${evt.color}" style="${evt.isEventPast ? 'opacity:0.4;' : ''}"></div>
                     <div style="flex:1; position:relative; z-index:2;">
-                        <h4 style="margin:0; font-size:16px; font-weight:600; color:${evt.img ? 'white' : 'var(--text-primary)'}">${evt.title}</h4>
-                        <div style="font-size:12px; color:${evt.img ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)'}; margin-top:2px; display:flex; align-items:center; gap:6px;">
+                        <h4 style="margin:0; font-size:16px; font-weight:600; color:${evt.img ? 'white' : 'var(--text-primary)'}; ${evt.isEventPast ? 'opacity:0.6;' : ''}">${evt.title}</h4>
+                        <div style="font-size:12px; color:${evt.img ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)'}; margin-top:2px; display:flex; align-items:center; gap:6px; ${evt.isEventPast ? 'opacity:0.5;' : ''}">
                             <span>${evt.time || 'All Day'}</span>
                             ${evt.description ? '<span>• ' + evt.description.substring(0, 20) + (evt.description.length > 20 ? '...' : '') + '</span>' : ''}
                         </div>
@@ -293,7 +337,7 @@ class Calendar {
                 `;
 
                 // Entrance Animation
-                row.style.animationDelay = `${index * 0.1}s`;
+                row.style.animationDelay = `${displayIndex * 0.1}s`;
                 list.appendChild(row);
             });
             content.appendChild(list);
@@ -307,28 +351,57 @@ class Calendar {
         const panel = document.getElementById('eventDetailsPanel');
         const details = document.getElementById('eventDetails');
 
+        // Check if event is in the past (date AND time)
+        const eventDate = new Date(dateStr);
+        const now = new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let isPast = false;
+
+        if (eventDate < today) {
+            // Date is before today
+            isPast = true;
+        } else if (eventDate.toDateString() === now.toDateString() && event.time) {
+            // Same day, check if time has passed
+            const [hours, minutes] = event.time.split(':').map(Number);
+            const eventDateTime = new Date();
+            eventDateTime.setHours(hours, minutes, 0, 0);
+
+            if (eventDateTime < now) {
+                isPast = true;
+            }
+        }
+
         let imgHTML = '';
         if (event.img) {
-            imgHTML = `<div style="width:100%; height:150px; background:url(${event.img}) center/cover no-repeat; border-radius:12px; margin-bottom:16px;"></div>`;
+            imgHTML = `<div style="width:100%; height:150px; background:url(${event.img}) center/cover no-repeat; border-radius:12px; margin-bottom:16px;${isPast ? ' opacity:0.6; filter:grayscale(50%);' : ''}"></div>`;
+        }
+
+        // Past event info (not warning, just info)
+        let pastInfo = '';
+        if (isPast) {
+            pastInfo = `<div style="background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.3); border-radius:8px; padding:12px; margin-bottom:16px; color:var(--primary); font-size:13px;">💡 This event has passed. You can duplicate it to create a new event with updated date/time.</div>`;
         }
 
         details.innerHTML = `
             ${imgHTML}
+            ${pastInfo}
             <div class="detail-group">
                 <label>Event</label>
-                <h2>${event.title}</h2>
+                <h2 style="${isPast ? 'opacity:0.7;' : ''}">${event.title}</h2>
             </div>
             <div class="detail-group">
                 <label>Time</label>
-                <p>${event.time || 'All Day'}</p>
+                <p style="${isPast ? 'opacity:0.7;' : ''}">${event.time || 'All Day'}</p>
             </div>
              <div class="detail-group">
                 <label>Description</label>
-                <p>${event.description || 'No description provided.'}</p>
+                <p style="${isPast ? 'opacity:0.7;' : ''}">${event.description || 'No description provided.'}</p>
             </div>
             <div class="form-actions" style="margin-top: 24px;">
                 <button class="btn btn-text" id="closeDetailsBtn">Close</button>
-                <button class="btn btn-text" id="editEventBtn" style="color:var(--primary)">Edit</button>
+                <button class="btn btn-text" id="editEventBtn" style="color:var(--primary)">${isPast ? 'Duplicate & Edit' : 'Edit'}</button>
                 <button class="btn" id="deleteEventBtn" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.5);">Delete</button>
             </div>
 `;
@@ -338,9 +411,52 @@ class Calendar {
 
         // Handlers
         document.getElementById('closeDetailsBtn').onclick = () => this.closeDetailsPanel();
-        document.getElementById('editEventBtn').onclick = () => this.editEvent(event, dateStr);
+
+        // Edit or Duplicate based on past status
+        if (isPast) {
+            document.getElementById('editEventBtn').onclick = () => this.duplicateAndEditEvent(event, dateStr);
+        } else {
+            document.getElementById('editEventBtn').onclick = () => this.editEvent(event, dateStr);
+        }
+
         document.getElementById('deleteEventBtn').onclick = () => this.deleteEvent(dateStr, index);
         document.getElementById('closeDetailsPanel').onclick = () => this.closeDetailsPanel();
+    }
+
+    // New: Duplicate past event and edit with current date
+    duplicateAndEditEvent(event, oldDateStr) {
+        // Close details panel
+        this.closeDetailsPanel();
+
+        // Open add event panel
+        this.openAddEventPanel();
+
+        // Pre-fill with event data but use TODAY's date
+        const today = new Date();
+        const todayStr = this.formatDate(today);
+
+        // Set today's date in the date picker
+        if (this.eventDatePicker) {
+            this.eventDatePicker.setValue(todayStr);
+        }
+
+        // Pre-fill other fields (NO "(Copy)" suffix)
+        document.getElementById('eventTitle').value = event.title;
+        document.getElementById('eventTime').value = event.time || '';
+        document.getElementById('eventDescription').value = event.description || '';
+
+        // Set color
+        const colorRadio = document.querySelector(`input[name="color"][value="${event.color}"]`);
+        if (colorRadio) colorRadio.checked = true;
+
+        // Set image if exists
+        if (event.img) {
+            const preview = document.getElementById('imagePreview');
+            preview.src = event.img;
+            preview.style.display = 'block';
+        }
+
+        // Note: This creates a NEW event, the old one stays in the past
     }
 
     openSettingsPanel() {
@@ -539,7 +655,29 @@ class Calendar {
             if (evts.length) {
                 const dots = document.createElement('div');
                 dots.className = 'day-events';
-                evts.slice(0, 3).forEach(e => {
+
+                // Hide dots for past events
+                // Logic: 
+                // 1. If date is past (yesterday etc), hide all? User said "dots of past event remove".
+                // 2. Or filter out past events based on time?
+                // Let's filter out ANY past event (date < today OR (date=today AND time < now))
+                const now = new Date();
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const activeEvents = evts.filter(e => {
+                    // Use 'd' (local date from loop) instead of parsing dateStr
+                    if (d < today) return false;
+                    if (d.toDateString() === today.toDateString() && e.time) {
+                        const [h, m] = e.time.split(':').map(Number);
+                        const evtTime = new Date();
+                        evtTime.setHours(h, m, 0, 0);
+                        if (evtTime < now) return false;
+                    }
+                    return true;
+                });
+
+                activeEvents.slice(0, 3).forEach(e => {
                     dots.innerHTML += `<div class="event-dot ${e.color}"></div>`;
                 });
                 cell.appendChild(dots);
@@ -554,10 +692,10 @@ class Calendar {
 
     /* FOCUS VIEW RENDERER (Space Carousel) */
     renderFocus(targetDate = null) {
-        // Use provided date or default to 'currentDate' (or Today if we want Focus to always be Today initially)
-        // Let's use this.selectedDate if available, else new Date()
+        // Use provided date or default to 'currentDate'
         const date = targetDate || this.selectedDate || new Date();
-        const events = this.getEventsForDay(this.formatDate(date));
+        const dateStr = this.formatDate(date); // Defined here!
+        const events = this.getEventsForDay(dateStr);
 
         const container = document.getElementById('focusCarousel');
         const headerContainer = document.querySelector('.focus-header'); // Use class selector for flex container
@@ -614,10 +752,45 @@ class Calendar {
                 </div>
     `;
         } else {
+            // Sort events: upcoming first, past at bottom
+            const now = new Date();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const eventDate = new Date(dateStr);
+
+            const eventsWithStatus = events.map(evt => {
+                let isPast = eventDate < today;
+                let timeValue = 0;
+
+                if (evt.time) {
+                    const [hours, minutes] = evt.time.split(':').map(Number);
+                    timeValue = hours * 60 + minutes;
+
+                    if (!isPast && eventDate.toDateString() === now.toDateString()) {
+                        const eventDateTime = new Date();
+                        eventDateTime.setHours(hours, minutes, 0, 0);
+                        if (eventDateTime < now) {
+                            isPast = true;
+                        }
+                    }
+                }
+
+                return { ...evt, isPast, timeValue };
+            });
+
+            const upcomingEvents = eventsWithStatus.filter(e => !e.isPast).sort((a, b) => a.timeValue - b.timeValue);
+            const pastEvents = eventsWithStatus.filter(e => e.isPast).sort((a, b) => a.timeValue - b.timeValue);
+            const sortedEvents = [...upcomingEvents, ...pastEvents];
+
             // Event Cards
-            events.forEach(evt => {
+            sortedEvents.forEach(evt => {
                 const card = document.createElement('div');
                 card.className = `focus-card ${evt.color || 'purple'}`;
+
+                if (evt.isPast) {
+                    card.style.opacity = '0.6';
+                    card.style.filter = 'grayscale(30%)';
+                }
 
                 // Add Image Background if exists
                 if (evt.img) {
@@ -663,9 +836,10 @@ class Calendar {
     openAddEventPanel(date = null) {
         this.currentEditId = null; // Reset edit state
         const targetDate = date || this.selectedDate || new Date();
-        document.getElementById('eventDate').value = this.formatDate(targetDate);
 
+        // Clear all form fields
         document.getElementById('eventTitle').value = '';
+        document.getElementById('eventTime').value = ''; // Clear time field
         document.getElementById('eventDescription').value = '';
 
         // Reset Propagate / Recurrence State
@@ -688,6 +862,7 @@ class Calendar {
         // Reset Date Pickers
         if (this.eventDatePicker) this.eventDatePicker.setValue(this.formatDate(targetDate));
         if (this.repeatEndDatePicker) this.repeatEndDatePicker.setValue('');
+        if (this.eventTimePicker) this.eventTimePicker.setValue(''); // Clear time picker
 
         // Reset Image Upload State
         const imgPreview = document.getElementById('imagePreview');
@@ -819,6 +994,25 @@ class Calendar {
             }
             timeInput.focus();
             return;
+        }
+
+        // VALIDATION: Check if time is in the past for TODAY
+        const now = new Date();
+        if (time && this.formatDate(now) === dateStr) {
+            const [hours, minutes] = time.split(':').map(Number);
+            const inputTime = new Date();
+            inputTime.setHours(hours, minutes, 0, 0);
+
+            if (inputTime < now) {
+                const timeError = document.getElementById('timeError');
+                if (timeError) {
+                    timeError.textContent = 'Current time has passed!';
+                    timeError.style.display = 'block'; // Ensure visible
+                    timeInput.parentElement.style.borderColor = '#ef4444';
+                }
+                timeInput.focus();
+                return;
+            }
         }
 
         // 1. Determine List of Dates to Save

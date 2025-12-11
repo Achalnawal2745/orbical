@@ -20,6 +20,7 @@ OrbiCal is a stunning, productivity-focused calendar extension designed with a f
 - **Recurring Events**: Schedule events that repeat Daily, Weekly (e.g., "Every Sat/Sun"), or Monthly.
 - **Quick Add**: Create events instantly with the floating action button.
 - **Keyboard Shortcut**: Press **Alt+C** to instantly open the calendar (Customizable in `chrome://extensions/shortcuts`).
+- **Event Images**: Add custom images to your events for visual context.
 
 ### 📅 Views
 - **Month View**: Classic grid with "Glowing Orb" day indicators.
@@ -41,3 +42,4 @@ OrbiCal is a stunning, productivity-focused calendar extension designed with a f
 
 ---
 *Crafted with ❤️ for the future.*
+

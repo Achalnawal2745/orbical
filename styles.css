@@ -270,6 +270,12 @@ body {
 }
 
 /* Violet */
+.event-dot.yellow {
+    background: #fbbf24;
+    color: #fbbf24;
+}
+
+/* Yellow/Amber */
 
 /* BOTTOM NAV - Active Pill Design */
 .bottom-nav {
@@ -509,6 +515,11 @@ body {
     box-shadow: 0 10px 40px rgba(16, 185, 129, 0.2);
 }
 
+.focus-card.yellow {
+    border-bottom: 2px solid #fbbf24;
+    box-shadow: 0 10px 40px rgba(251, 191, 36, 0.2);
+}
+
 /* Card Content */
 .card-time {
     font-size: 14px;
@@ -525,6 +536,37 @@ body {
     border-radius: 50%;
     background: currentColor;
     box-shadow: 0 0 8px currentColor;
+}
+
+/* Colored icons for each card type */
+.focus-card.blue .card-icon {
+    background: #3b82f6;
+    box-shadow: 0 0 12px #3b82f6;
+}
+
+.focus-card.purple .card-icon {
+    background: #a855f7;
+    box-shadow: 0 0 12px #a855f7;
+}
+
+.focus-card.red .card-icon {
+    background: #ef4444;
+    box-shadow: 0 0 12px #ef4444;
+}
+
+.focus-card.green .card-icon {
+    background: #10b981;
+    box-shadow: 0 0 12px #10b981;
+}
+
+.focus-card.cyan .card-icon {
+    background: #06b6d4;
+    box-shadow: 0 0 12px #06b6d4;
+}
+
+.focus-card.yellow .card-icon {
+    background: #fbbf24;
+    box-shadow: 0 0 12px #fbbf24;
 }
 
 .card-title {
@@ -944,6 +986,19 @@ body {
     border-color: rgba(99, 102, 241, 0.3);
 }
 
+/* Past Event Styling */
+.orbital-event-card.past-event {
+    opacity: 0.6;
+    filter: grayscale(30%);
+}
+
+.orbital-event-card.past-event:hover {
+    opacity: 0.7;
+    transform: translateX(2px);
+}
+
+
+
 .orbital-event-card.has-image {
     position: relative;
     overflow: hidden;
@@ -963,6 +1018,37 @@ body {
     height: 40px;
     border-radius: 4px;
     box-shadow: 0 0 10px currentColor;
+}
+
+/* Colored pills for each event type */
+.orb-pill.blue {
+    background: #3b82f6;
+    box-shadow: 0 0 10px #3b82f6;
+}
+
+.orb-pill.purple {
+    background: #a855f7;
+    box-shadow: 0 0 10px #a855f7;
+}
+
+.orb-pill.red {
+    background: #ef4444;
+    box-shadow: 0 0 10px #ef4444;
+}
+
+.orb-pill.green {
+    background: #10b981;
+    box-shadow: 0 0 10px #10b981;
+}
+
+.orb-pill.cyan {
+    background: #06b6d4;
+    box-shadow: 0 0 10px #06b6d4;
+}
+
+.orb-pill.yellow {
+    background: #fbbf24;
+    box-shadow: 0 0 10px #fbbf24;
 }
 
 .orb-content {
@@ -1251,7 +1337,8 @@ body {
     letter-spacing: 0.5px;
 }
 
-.form-input {
+.form-input,
+select.form-input {
     width: 100%;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1261,6 +1348,11 @@ body {
     font-family: 'Inter', sans-serif;
     font-size: 14px;
     transition: 0.2s;
+}
+
+select.form-input option {
+    background: #14151f;
+    color: white;
 }
 
 .form-input:focus {
@@ -1329,6 +1421,18 @@ textarea.form-input {
 .color-dot.color-yellow {
     background: #f59e0b;
     color: #f59e0b;
+}
+
+
+.focus-carousel {
+    /* Horizontal Layout (Default) */
+    display: flex;
+    overflow-x: auto;
+    gap: 16px;
+    width: 100%;
+    padding: 10px;
+    scroll-behavior: smooth;
+    align-items: center;
 }
 
 .form-actions {
