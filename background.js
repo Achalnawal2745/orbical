@@ -1,9 +1,10 @@
-// Background service worker for the calendar extension
+// Background service worker for OrbiCal extension
+console.log('OrbiCal background service worker started');
 
 const ALARM_NAME = 'usage_tracker';
 
 chrome.runtime.onInstalled.addListener(() => {
-    console.log('Calendar Extension installed');
+    console.log('OrbiCal Extension installed');
     chrome.alarms.create(ALARM_NAME, { periodInMinutes: 1 });
 
     // Initialize storage
@@ -41,6 +42,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                     }
 
                     chrome.storage.local.set({ stats, lastDate });
+                    console.log(`Online time updated: ${stats.minutesOnline} minutes`);
                 });
             }
         });
@@ -102,6 +104,7 @@ function checkEvents() {
 
                 newNotified.push(evt.id);
                 hasUpdates = true;
+                console.log(`Notification sent for event: ${evt.title}`);
             }
         });
 
@@ -119,4 +122,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
         return true;
     }
+});
+
+// Listen for notification clicks
+chrome.notifications.onClicked.addListener((notificationId) => {
+    // Open the extension popup
+    chrome.action.openPopup();
 });

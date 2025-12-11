@@ -16,25 +16,128 @@ class DatePicker {
     }
 
     init() {
-        // Set placeholder format
         this.input.placeholder = 'DD:MM:YYYY';
 
-        // ONLY icon click opens picker
+        // Icon click toggles picker
         if (this.icon) {
             this.icon.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.open();
+                if (this.dropdown.classList.contains('active')) {
+                    this.close();
+                } else {
+                    this.open();
+                }
             });
         }
 
-        // Masked input handling
-        this.input.addEventListener('input', (e) => {
-            this.handleMaskedInput(e);
+        // Clicking input closes picker
+        this.input.addEventListener('focus', () => {
+            if (this.dropdown.classList.contains('active')) {
+                this.close();
+            }
         });
 
-        // Parse on blur
+        // Handle input with validation
+        this.input.addEventListener('input', (e) => {
+            let value = e.target.value;
+            let cursorPos = e.target.selectionStart;
+
+            // Only allow digits and colons
+            value = value.replace(/[^\d:]/g, '');
+
+            // Split by colons to get parts
+            let parts = value.split(':');
+
+            // Validate and limit each part
+            if (parts[0]) {
+                // Day: 01-31
+                let day = parts[0].replace(/\D/g, '');
+                if (day.length > 2) day = day.substring(0, 2);
+                if (parseInt(day) > 31) day = '31';
+                parts[0] = day;
+            }
+
+            if (parts[1]) {
+                // Month: 01-12
+                let month = parts[1].replace(/\D/g, '');
+                if (month.length > 2) month = month.substring(0, 2);
+                if (parseInt(month) > 12) month = '12';
+                parts[1] = month;
+            }
+
+            if (parts[2]) {
+                // Year: 4 digits, >= current year
+                let year = parts[2].replace(/\D/g, '');
+                if (year.length > 4) year = year.substring(0, 4);
+                parts[2] = year;
+            }
+
+            // Rebuild value
+            value = parts.join(':');
+
+            // Limit total length
+            if (value.length > 10) {
+                value = value.substring(0, 10);
+            }
+
+            e.target.value = value;
+
+            // Restore cursor position
+            if (cursorPos > value.length) cursorPos = value.length;
+            e.target.setSelectionRange(cursorPos, cursorPos);
+        });
+
+        // Validate on blur
         this.input.addEventListener('blur', () => {
-            this.parseAndValidate();
+            const value = this.input.value;
+            const errorEl = document.getElementById('dateError');
+
+            if (!value) {
+                // Empty is okay
+                if (errorEl) errorEl.textContent = '';
+                this.input.style.borderColor = '';
+                return;
+            }
+
+            if (value.length === 10) {
+                const parts = value.split(':');
+                const day = parseInt(parts[0]);
+                const month = parseInt(parts[1]) - 1;
+                const year = parseInt(parts[2]);
+
+                // Check if date is valid
+                const date = new Date(year, month, day);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                if (isNaN(date.getTime()) || date.getDate() !== day || date.getMonth() !== month) {
+                    // Invalid date
+                    this.input.style.borderColor = '#ef4444';
+                    this.input.dataset.isoDate = '';
+                    this.input.dataset.valid = 'false';
+                    if (errorEl) errorEl.textContent = 'Invalid date format';
+                } else if (date < today) {
+                    // Past date
+                    this.input.style.borderColor = '#ef4444';
+                    this.input.dataset.isoDate = '';
+                    this.input.dataset.valid = 'false';
+                    if (errorEl) errorEl.textContent = 'Past dates are not allowed';
+                } else {
+                    // Valid date
+                    this.selectedDate = date;
+                    this.currentMonth = new Date(date);
+                    this.input.dataset.isoDate = this.formatDateISO(date);
+                    this.input.dataset.valid = 'true';
+                    this.input.style.borderColor = 'rgba(99, 102, 241, 0.5)';
+                    if (errorEl) errorEl.textContent = '';
+                }
+            } else {
+                // Incomplete date
+                this.input.style.borderColor = '#ef4444';
+                this.input.dataset.isoDate = '';
+                this.input.dataset.valid = 'false';
+                if (errorEl) errorEl.textContent = 'Please enter complete date (DD:MM:YYYY)';
+            }
         });
 
         // Close on outside click
@@ -48,71 +151,10 @@ class DatePicker {
         this.render();
     }
 
-    handleMaskedInput(e) {
-        let value = e.target.value;
-        const cursorPos = e.target.selectionStart;
-
-        // Remove all non-digits
-        let digits = value.replace(/\D/g, '');
-
-        // Limit to 8 digits (DDMMYYYY)
-        if (digits.length > 8) {
-            digits = digits.substring(0, 8);
-        }
-
-        // Format with colons
-        let formatted = '';
-        if (digits.length > 0) {
-            formatted = digits.substring(0, 2); // DD
-            if (digits.length > 2) {
-                formatted += ':' + digits.substring(2, 4); // MM
-                if (digits.length > 4) {
-                    formatted += ':' + digits.substring(4, 8); // YYYY
-                }
-            }
-        }
-
-        e.target.value = formatted;
-
-        // Adjust cursor position
-        let newCursorPos = cursorPos;
-        if (formatted.length >= 3 && cursorPos === 2) {
-            newCursorPos = 3; // Jump over first colon
-        } else if (formatted.length >= 6 && cursorPos === 5) {
-            newCursorPos = 6; // Jump over second colon
-        }
-
-        e.target.setSelectionRange(newCursorPos, newCursorPos);
-    }
-
-    parseAndValidate() {
-        const value = this.input.value;
-        if (value && value.length === 10) { // DD:MM:YYYY
-            const parts = value.split(':');
-            if (parts.length === 3) {
-                const day = parseInt(parts[0]);
-                const month = parseInt(parts[1]) - 1;
-                const year = parseInt(parts[2]);
-                const parsed = new Date(year, month, day);
-
-                if (!isNaN(parsed.getTime()) &&
-                    parsed.getDate() === day &&
-                    parsed.getMonth() === month) {
-                    this.selectedDate = parsed;
-                    this.currentMonth = new Date(parsed);
-                    this.updateInputDisplay();
-                }
-            }
-        }
-    }
-
     open() {
-        // Close other date pickers
         document.querySelectorAll('.date-picker-dropdown.active').forEach(dp => {
             if (dp !== this.dropdown) dp.classList.remove('active');
         });
-
-        // Close time pickers too
         document.querySelectorAll('.time-picker-dropdown.active').forEach(tp => {
             tp.classList.remove('active');
         });
@@ -152,24 +194,36 @@ class DatePicker {
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const prevMonthDays = new Date(year, month, 0).getDate();
 
+        // Previous month days (disabled)
         for (let i = firstDay - 1; i >= 0; i--) {
             html += `<div class="date-picker-day other-month">${prevMonthDays - i}</div>`;
         }
 
+        // Current month days
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const isToday = date.toDateString() === today.toDateString();
             const isSelected = this.selectedDate && date.toDateString() === this.selectedDate.toDateString();
+            const isPast = date < today;
 
             let classes = 'date-picker-day';
             if (isToday) classes += ' today';
             if (isSelected) classes += ' selected';
+            if (isPast) classes += ' disabled';
 
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            html += `<div class="${classes}" data-date="${dateStr}">${day}</div>`;
+
+            if (isPast) {
+                html += `<div class="${classes}">${day}</div>`;
+            } else {
+                html += `<div class="${classes}" data-date="${dateStr}">${day}</div>`;
+            }
         }
 
+        // Next month days
         const totalCells = firstDay + daysInMonth;
         const remainingCells = 7 - (totalCells % 7);
         if (remainingCells < 7) {
@@ -198,11 +252,7 @@ class DatePicker {
                     this.render();
                 } else if (action === 'today') {
                     const today = new Date();
-                    this.selectedDate = today;
-                    this.currentMonth = new Date(today);
-                    this.updateInputDisplay();
-                    this.input.dispatchEvent(new Event('change', { bubbles: true }));
-                    this.close();
+                    this.setDateFromPicker(today);
                 }
             });
         });
@@ -211,23 +261,23 @@ class DatePicker {
             day.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const dateStr = day.dataset.date;
-                this.selectedDate = new Date(dateStr + 'T12:00:00');
-                this.currentMonth = new Date(this.selectedDate);
-                this.updateInputDisplay();
-                this.input.dispatchEvent(new Event('change', { bubbles: true }));
-                this.close();
+                const date = new Date(dateStr + 'T12:00:00');
+                this.setDateFromPicker(date);
             });
         });
     }
 
-    updateInputDisplay() {
-        if (this.selectedDate) {
-            const day = String(this.selectedDate.getDate()).padStart(2, '0');
-            const month = String(this.selectedDate.getMonth() + 1).padStart(2, '0');
-            const year = this.selectedDate.getFullYear();
-            this.input.value = `${day}:${month}:${year}`;
-            this.input.dataset.isoDate = this.formatDateISO(this.selectedDate);
-        }
+    setDateFromPicker(date) {
+        this.selectedDate = date;
+        this.currentMonth = new Date(date);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = String(date.getFullYear());
+        this.input.value = `${day}:${month}:${year}`;
+        this.input.dataset.isoDate = this.formatDateISO(date);
+        this.input.style.borderColor = 'rgba(99, 102, 241, 0.5)';
+        this.input.dispatchEvent(new Event('change', { bubbles: true }));
+        this.close();
     }
 
     formatDateISO(date) {
@@ -239,9 +289,14 @@ class DatePicker {
 
     setValue(dateStr) {
         if (dateStr) {
-            this.selectedDate = new Date(dateStr + 'T12:00:00');
-            this.currentMonth = new Date(this.selectedDate);
-            this.updateInputDisplay();
+            const date = new Date(dateStr + 'T12:00:00');
+            this.selectedDate = date;
+            this.currentMonth = new Date(date);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = String(date.getFullYear());
+            this.input.value = `${day}:${month}:${year}`;
+            this.input.dataset.isoDate = dateStr;
         } else {
             this.selectedDate = null;
             this.input.value = '';
@@ -272,25 +327,103 @@ class TimePicker {
     }
 
     init() {
-        // Set placeholder
         this.input.placeholder = 'HH:MM';
 
-        // ONLY icon click opens picker
+        // Icon click toggles picker
         if (this.icon) {
             this.icon.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.open();
+                if (this.dropdown.classList.contains('active')) {
+                    this.close();
+                } else {
+                    this.open();
+                }
             });
         }
 
-        // Masked input handling
-        this.input.addEventListener('input', (e) => {
-            this.handleMaskedInput(e);
+        // Clicking input closes picker
+        this.input.addEventListener('focus', () => {
+            if (this.dropdown.classList.contains('active')) {
+                this.close();
+            }
         });
 
-        // Parse on blur
+        // Handle input with validation
+        this.input.addEventListener('input', (e) => {
+            let value = e.target.value;
+            let cursorPos = e.target.selectionStart;
+
+            // Only allow digits and colons
+            value = value.replace(/[^\d:]/g, '');
+
+            // Split by colons
+            let parts = value.split(':');
+
+            // Validate and limit each part
+            if (parts[0]) {
+                // Hour: 00-23
+                let hour = parts[0].replace(/\D/g, '');
+                if (hour.length > 2) hour = hour.substring(0, 2);
+                if (parseInt(hour) > 23) hour = '23';
+                parts[0] = hour;
+            }
+
+            if (parts[1]) {
+                // Minute: 00-59
+                let minute = parts[1].replace(/\D/g, '');
+                if (minute.length > 2) minute = minute.substring(0, 2);
+                if (parseInt(minute) > 59) minute = '59';
+                parts[1] = minute;
+            }
+
+            // Rebuild value
+            value = parts.join(':');
+
+            // Limit total length
+            if (value.length > 5) {
+                value = value.substring(0, 5);
+            }
+
+            e.target.value = value;
+
+            // Restore cursor position
+            if (cursorPos > value.length) cursorPos = value.length;
+            e.target.setSelectionRange(cursorPos, cursorPos);
+        });
+
+        // Validate on blur
         this.input.addEventListener('blur', () => {
-            this.parseAndValidate();
+            const value = this.input.value;
+            const errorEl = document.getElementById('timeError');
+
+            if (!value) {
+                // Empty is okay
+                if (errorEl) errorEl.textContent = '';
+                this.input.style.borderColor = '';
+                return;
+            }
+
+            if (value.match(/^\d{2}:\d{2}$/)) {
+                const [h, m] = value.split(':');
+                const hour = parseInt(h);
+                const minute = parseInt(m);
+
+                if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60) {
+                    this.selectedHour = hour;
+                    this.selectedMinute = minute;
+                    this.input.dataset.valid = 'true';
+                    this.input.style.borderColor = 'rgba(99, 102, 241, 0.5)';
+                    if (errorEl) errorEl.textContent = '';
+                } else {
+                    this.input.dataset.valid = 'false';
+                    this.input.style.borderColor = '#ef4444';
+                    if (errorEl) errorEl.textContent = 'Invalid time (Hour: 00-23, Minute: 00-59)';
+                }
+            } else {
+                this.input.dataset.valid = 'false';
+                this.input.style.borderColor = '#ef4444';
+                if (errorEl) errorEl.textContent = 'Please enter complete time (HH:MM)';
+            }
         });
 
         // Close on outside click
@@ -304,59 +437,10 @@ class TimePicker {
         this.render();
     }
 
-    handleMaskedInput(e) {
-        let value = e.target.value;
-        const cursorPos = e.target.selectionStart;
-
-        // Remove all non-digits
-        let digits = value.replace(/\D/g, '');
-
-        // Limit to 4 digits (HHMM)
-        if (digits.length > 4) {
-            digits = digits.substring(0, 4);
-        }
-
-        // Format with colon
-        let formatted = '';
-        if (digits.length > 0) {
-            formatted = digits.substring(0, 2); // HH
-            if (digits.length > 2) {
-                formatted += ':' + digits.substring(2, 4); // MM
-            }
-        }
-
-        e.target.value = formatted;
-
-        // Adjust cursor position
-        let newCursorPos = cursorPos;
-        if (formatted.length >= 3 && cursorPos === 2) {
-            newCursorPos = 3; // Jump over colon
-        }
-
-        e.target.setSelectionRange(newCursorPos, newCursorPos);
-    }
-
-    parseAndValidate() {
-        const value = this.input.value;
-        if (value && value.match(/^\d{2}:\d{2}$/)) {
-            const [h, m] = value.split(':');
-            const hour = parseInt(h);
-            const minute = parseInt(m);
-
-            if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60) {
-                this.selectedHour = hour;
-                this.selectedMinute = minute;
-            }
-        }
-    }
-
     open() {
-        // Close other time pickers
         document.querySelectorAll('.time-picker-dropdown.active').forEach(tp => {
             if (tp !== this.dropdown) tp.classList.remove('active');
         });
-
-        // Close date pickers too
         document.querySelectorAll('.date-picker-dropdown.active').forEach(dp => {
             dp.classList.remove('active');
         });
@@ -427,7 +511,11 @@ class TimePicker {
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.selectedHour = parseInt(item.dataset.hour);
-                this.updateSelection();
+                if (this.selectedMinute !== null) {
+                    this.setTimeFromPicker();
+                } else {
+                    this.render();
+                }
             });
         });
 
@@ -435,21 +523,22 @@ class TimePicker {
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.selectedMinute = parseInt(item.dataset.minute);
-                this.updateSelection();
+                if (this.selectedHour !== null) {
+                    this.setTimeFromPicker();
+                } else {
+                    this.render();
+                }
             });
         });
     }
 
-    updateSelection() {
-        if (this.selectedHour !== null && this.selectedMinute !== null) {
-            const hourStr = String(this.selectedHour).padStart(2, '0');
-            const minStr = String(this.selectedMinute).padStart(2, '0');
-            this.input.value = `${hourStr}:${minStr}`;
-            this.input.dispatchEvent(new Event('change', { bubbles: true }));
-            this.close();
-        } else {
-            this.render();
-        }
+    setTimeFromPicker() {
+        const hourStr = String(this.selectedHour).padStart(2, '0');
+        const minStr = String(this.selectedMinute).padStart(2, '0');
+        this.input.value = `${hourStr}:${minStr}`;
+        this.input.style.borderColor = 'rgba(99, 102, 241, 0.5)';
+        this.input.dispatchEvent(new Event('change', { bubbles: true }));
+        this.close();
     }
 
     setValue(timeStr) {

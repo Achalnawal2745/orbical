@@ -764,9 +764,11 @@ class Calendar {
         e.preventDefault();
 
         // Get date from custom date picker (ISO format)
-        const dateStr = this.eventDatePicker ? this.eventDatePicker.getValue() : document.getElementById('eventDate').value;
+        const dateInput = document.getElementById('eventDate');
+        const dateStr = this.eventDatePicker ? this.eventDatePicker.getValue() : dateInput.value;
         const title = document.getElementById('eventTitle').value;
-        const time = document.getElementById('eventTime').value;
+        const timeInput = document.getElementById('eventTime');
+        const time = timeInput.value;
         const desc = document.getElementById('eventDescription').value;
         const color = document.querySelector('input[name="color"]:checked').value;
 
@@ -784,8 +786,40 @@ class Calendar {
         const weekDays = Array.from(document.querySelectorAll('.week-days-selector input:checked'))
             .map(cb => parseInt(cb.value));
 
-        // Basic Validation
-        if (!title || !dateStr) return;
+        // VALIDATION: Check required fields
+        if (!title) {
+            alert('Please enter an event title');
+            document.getElementById('eventTitle').focus();
+            return;
+        }
+
+        if (!dateStr) {
+            const dateError = document.getElementById('dateError');
+            if (dateError) dateError.textContent = 'Date is required';
+            dateInput.style.borderColor = '#ef4444';
+            dateInput.focus();
+            return;
+        }
+
+        // VALIDATION: Check if date is valid
+        if (dateInput.dataset.valid === 'false') {
+            const dateError = document.getElementById('dateError');
+            if (dateError && !dateError.textContent) {
+                dateError.textContent = 'Please enter a valid future date';
+            }
+            dateInput.focus();
+            return;
+        }
+
+        // VALIDATION: Check if time is valid (if provided)
+        if (time && timeInput.dataset.valid === 'false') {
+            const timeError = document.getElementById('timeError');
+            if (timeError && !timeError.textContent) {
+                timeError.textContent = 'Please enter a valid time (HH:MM)';
+            }
+            timeInput.focus();
+            return;
+        }
 
         // 1. Determine List of Dates to Save
         let datesToSave = [dateStr]; // Default: Just the selected date
