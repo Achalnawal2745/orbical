@@ -338,7 +338,7 @@
         <!-- Stats Panel -->
         <div class="event-panel" id="settingsPanel">
             <div class="panel-header">
-                <h3>Stats</h3>
+                <h3>Stats & Usage</h3>
                 <button class="icon-btn" id="closeSettingsPanel">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -347,7 +347,14 @@
                 </button>
             </div>
 
-            <div class="stats-container">
+            <!-- Tabs -->
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-tab="online">Online Time</button>
+                <button class="settings-tab" data-tab="usage">Usage Analytics</button>
+            </div>
+
+            <!-- Online Stats Tab -->
+            <div class="stats-container tab-content active" id="onlineStatsTab">
                 <!-- Overview Cards -->
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -374,6 +381,40 @@
                         Click the clock to toggle 12h/24h format.
                     </p>
                     <!-- Future settings here -->
+                </div>
+            </div>
+
+            <!-- Usage Analytics Tab -->
+            <div class="stats-container tab-content" id="usageStatsTab">
+                <!-- All-Time Stats -->
+                <div class="usage-summary">
+                    <h4>All-Time Statistics</h4>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalSitesVisited">0</div>
+                            <div class="stat-label">Sites Tracked</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalBrowsingTime">0h</div>
+                            <div class="stat-label">Total Time</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Sites List -->
+                <div class="top-sites-section">
+                    <h4>Top 10 Sites</h4>
+                    <div id="topSitesList" class="top-sites-list">
+                        <!-- Sites injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Weekly Reports -->
+                <div class="weekly-reports-section">
+                    <h4>Weekly Reports</h4>
+                    <div id="weeklyReportsList" class="weekly-reports-list">
+                        <!-- Reports injected by JS -->
+                    </div>
                 </div>
             </div>
         </div>

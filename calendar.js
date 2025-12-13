@@ -466,12 +466,68 @@ class Calendar {
         panel.classList.add('active');
         backdrop.classList.add('active');
 
+        // Clear any existing refresh interval
+        if (this.statsRefreshInterval) {
+            clearInterval(this.statsRefreshInterval);
+        }
+
         // Logic to close
         document.getElementById('closeSettingsPanel').onclick = () => {
             panel.classList.remove('active');
             backdrop.classList.remove('active');
+            // Stop auto-refresh when panel closes
+            if (this.statsRefreshInterval) {
+                clearInterval(this.statsRefreshInterval);
+                this.statsRefreshInterval = null;
+            }
         };
 
+        // Tab switching logic
+        const tabs = document.querySelectorAll('.settings-tab');
+        tabs.forEach(tab => {
+            tab.onclick = () => {
+                // Remove active from all tabs
+                tabs.forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                // Add active to clicked tab
+                tab.classList.add('active');
+                const tabName = tab.dataset.tab;
+
+                if (tabName === 'online') {
+                    document.getElementById('onlineStatsTab').classList.add('active');
+                    this.renderOnlineStats();
+                    this.setupStatsRefresh('online');
+                } else if (tabName === 'usage') {
+                    document.getElementById('usageStatsTab').classList.add('active');
+                    this.renderUsageStats();
+                    this.setupStatsRefresh('usage');
+                }
+            };
+        });
+
+        // Render initial tab (online stats)
+        this.renderOnlineStats();
+        this.setupStatsRefresh('online');
+    }
+
+    setupStatsRefresh(tabType) {
+        // Clear existing interval
+        if (this.statsRefreshInterval) {
+            clearInterval(this.statsRefreshInterval);
+        }
+
+        // Set up new interval - refresh every 5 seconds
+        this.statsRefreshInterval = setInterval(() => {
+            if (tabType === 'online') {
+                this.renderOnlineStats();
+            } else if (tabType === 'usage') {
+                this.renderUsageStats();
+            }
+        }, 5000);
+    }
+
+    renderOnlineStats() {
         // Render Stats
         if (typeof chrome !== 'undefined' && chrome.storage) {
             chrome.storage.local.get(['stats'], (res) => {
@@ -514,7 +570,7 @@ class Calendar {
                     const heightPct = Math.min(100, Math.round((day.val / maxVal) * 100));
                     chart.innerHTML += `
                         <div class="chart-item">
-                            <div class="chart-bar-bg" title="${day.val} mins">
+                            <div class="chart-bar-bg" title="${this.formatMins(day.val)}">
                                 <div class="chart-bar-fill" style="height: ${heightPct}%"></div>
                             </div>
                             <span class="chart-date">${day.label}</span>
@@ -523,6 +579,136 @@ class Calendar {
                 });
             });
         }
+    }
+
+    renderUsageStats() {
+        if (typeof chrome !== 'undefined' && chrome.storage) {
+            // Show loading state
+            const topSitesList = document.getElementById('topSitesList');
+            const weeklyReportsList = document.getElementById('weeklyReportsList');
+
+            if (!this.usageStatsLoaded) {
+                topSitesList.innerHTML = '<div class="loading-spinner">Loading...</div>';
+                weeklyReportsList.innerHTML = '<div class="loading-spinner">Loading...</div>';
+            }
+
+            chrome.storage.local.get(['usageStats', 'weeklyReports'], (res) => {
+                const usageStats = res.usageStats || {};
+                const weeklyReports = res.weeklyReports || {};
+
+                // All-time stats
+                const totalSites = Object.keys(usageStats).length;
+                const totalSeconds = Object.values(usageStats).reduce((sum, data) => sum + data.totalSeconds, 0);
+
+                document.getElementById('totalSitesVisited').textContent = totalSites;
+                document.getElementById('totalBrowsingTime').textContent = this.formatSeconds(totalSeconds);
+
+                // Top 10 sites
+                this.renderTopSites(usageStats);
+
+                // Weekly reports
+                this.renderWeeklyReports(weeklyReports);
+
+                // Mark as loaded
+                this.usageStatsLoaded = true;
+            });
+        }
+    }
+
+    renderTopSites(usageStats) {
+        const topSitesList = document.getElementById('topSitesList');
+
+        if (Object.keys(usageStats).length === 0) {
+            topSitesList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📊</div>
+                    <div class="empty-state-text">No browsing data yet.<br>Start browsing to see your top sites!</div>
+                </div>
+            `;
+            return;
+        }
+
+        const sortedSites = Object.entries(usageStats)
+            .sort((a, b) => b[1].totalSeconds - a[1].totalSeconds)
+            .slice(0, 10);
+
+        const maxTime = sortedSites[0][1].totalSeconds;
+
+        topSitesList.innerHTML = sortedSites.map(([domain, data], index) => {
+            const progressPct = (data.totalSeconds / maxTime) * 100;
+            return `
+                <div class="site-item">
+                    <div class="site-rank">${index + 1}</div>
+                    <div class="site-info">
+                        <div class="site-name">${domain}</div>
+                        <div class="site-meta">
+                            <span class="category-badge ${data.category}">${data.category}</span>
+                            <span>${data.visits} visits</span>
+                        </div>
+                        <div class="site-progress">
+                            <div class="site-progress-fill" style="width: ${progressPct}%"></div>
+                        </div>
+                    </div>
+                    <div class="site-time">${this.formatSeconds(data.totalSeconds)}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    renderWeeklyReports(weeklyReports) {
+        const reportsList = document.getElementById('weeklyReportsList');
+
+        if (Object.keys(weeklyReports).length === 0) {
+            reportsList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📅</div>
+                    <div class="empty-state-text">No weekly reports yet.<br>Reports are generated every Sunday!</div>
+                </div>
+            `;
+            return;
+        }
+
+        const sortedReports = Object.entries(weeklyReports)
+            .sort((a, b) => b[0].localeCompare(a[0])); // Sort by week key descending
+
+        reportsList.innerHTML = sortedReports.map(([weekKey, report]) => {
+            return `
+                <div class="weekly-report-card">
+                    <div class="report-header">
+                        <div class="report-week">Week ${weekKey}</div>
+                        <div class="report-score">${report.productivityScore}% Productive</div>
+                    </div>
+                    <div class="report-stats">
+                        <div class="report-stat">
+                            <div class="report-stat-value">${this.formatSeconds(report.totalTime)}</div>
+                            <div class="report-stat-label">Total Time</div>
+                        </div>
+                        <div class="report-stat">
+                            <div class="report-stat-value">${this.formatSeconds(report.productiveTime)}</div>
+                            <div class="report-stat-label">Productive</div>
+                        </div>
+                    </div>
+                    <div class="report-top-sites">
+                        <div class="report-top-sites-title">Top 5 Sites</div>
+                        ${report.topSites.map(site => `
+                            <div class="report-site">
+                                <span class="report-site-name">${site.domain}</span>
+                                <span class="report-site-time">${this.formatSeconds(site.time)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    formatSeconds(seconds) {
+        if (seconds < 60) return `${seconds}s`;
+        const mins = Math.floor(seconds / 60);
+        if (mins < 60) return `${mins}m`;
+        const hours = Math.floor(mins / 60);
+        const remainingMins = mins % 60;
+        return remainingMins > 0 ? `${hours}h ${remainingMins}m` : `${hours}h`;
     }
 
     formatMins(m) {
