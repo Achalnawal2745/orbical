@@ -17,6 +17,7 @@ const CATEGORIES = {
 let currentTabUrl = null;
 let lastTrackTime = Date.now();
 let isUserIdle = false;
+let chromeLeftTime = null; // Track when Chrome loses focus
 
 chrome.runtime.onInstalled.addListener(() => {
     console.log('OrbiCal Extension installed');
@@ -63,40 +64,24 @@ function extractDomain(url) {
     }
 }
 
-// Track active tab
+// Track active tab - Called every 1 minute by alarm
 function trackActiveTab() {
     if (isUserIdle) return;
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0] && tabs[0].url) {
-            const url = tabs[0].url;
-            const domain = extractDomain(url);
+    // Check if Chrome is focused first
+    chrome.windows.getLastFocused({ populate: false }, (window) => {
+        if (!window || !window.focused) {
+            // Chrome not focused, don't track anything
+            return;
+        }
 
-            if (domain && !url.startsWith('chrome://') && !url.startsWith('chrome-extension://')) {
-                const now = Date.now();
-                const secondsElapsed = Math.floor((now - lastTrackTime) / 1000);
+        // Chrome IS focused, track the active tab
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0] && tabs[0].url) {
+                const url = tabs[0].url;
+                const domain = extractDomain(url);
 
-                if (currentTabUrl === domain && secondsElapsed > 0) {
-                    // Update usage for current domain
-                    chrome.storage.local.get(['usageStats'], (res) => {
-                        const usageStats = res.usageStats || {};
-
-                        if (!usageStats[domain]) {
-                            usageStats[domain] = {
-                                totalSeconds: 0,
-                                visits: 0,
-                                lastVisit: new Date().toISOString(),
-                                category: categorizeDomain(domain)
-                            };
-                        }
-
-                        usageStats[domain].totalSeconds += secondsElapsed;
-                        usageStats[domain].lastVisit = new Date().toISOString();
-
-                        chrome.storage.local.set({ usageStats });
-                    });
-                } else if (currentTabUrl !== domain) {
-                    // New domain - increment visit count
+                if (domain && !url.startsWith('chrome://') && !url.startsWith('chrome-extension://')) {
                     chrome.storage.local.get(['usageStats'], (res) => {
                         const usageStats = res.usageStats || {};
 
@@ -108,18 +93,24 @@ function trackActiveTab() {
                                 category: categorizeDomain(domain)
                             };
                         } else {
-                            usageStats[domain].visits += 1;
-                            usageStats[domain].lastVisit = new Date().toISOString();
+                            // Check if this is a new visit (different from last tracked domain)
+                            if (currentTabUrl !== domain) {
+                                usageStats[domain].visits += 1;
+                            }
                         }
 
+                        // Add 60 seconds (1 minute) since alarm fires every minute
+                        usageStats[domain].totalSeconds += 60;
+                        usageStats[domain].lastVisit = new Date().toISOString();
+
                         chrome.storage.local.set({ usageStats });
+
+                        // Update current tab for next check
+                        currentTabUrl = domain;
                     });
                 }
-
-                currentTabUrl = domain;
-                lastTrackTime = now;
             }
-        }
+        });
     });
 }
 
@@ -130,19 +121,19 @@ chrome.idle.onStateChanged.addListener((state) => {
     console.log(`User idle state: ${state}`);
 });
 
-// Continuous tracking - every 5 seconds
-setInterval(() => {
-    trackActiveTab();
-}, 5000);
-
-// Tab change tracking
-chrome.tabs.onActivated.addListener(() => {
-    trackActiveTab();
-});
-
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.url) {
-        trackActiveTab();
+// Listen for Chrome window focus changes
+chrome.windows.onFocusChanged.addListener((windowId) => {
+    if (windowId === chrome.windows.WINDOW_ID_NONE) {
+        // Chrome lost focus (user switched to another app)
+        chromeLeftTime = Date.now();
+        console.log('Chrome lost focus at:', new Date(chromeLeftTime).toLocaleTimeString());
+    } else {
+        // Chrome gained focus (user came back)
+        if (chromeLeftTime) {
+            const timeAway = Math.floor((Date.now() - chromeLeftTime) / 1000);
+            console.log(`Chrome regained focus. Was away for ${timeAway} seconds`);
+            chromeLeftTime = null;
+        }
     }
 });
 
