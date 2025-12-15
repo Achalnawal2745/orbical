@@ -25,12 +25,13 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.alarms.create(WEEKLY_REPORT_ALARM, { when: getNextSunday(), periodInMinutes: 10080 }); // Weekly
 
     // Initialize storage
-    chrome.storage.local.get(['events', 'stats', 'lastDate', 'usageStats', 'weeklyReports'], (result) => {
+    chrome.storage.local.get(['events', 'stats', 'lastDate', 'dailyUsageStats', 'weeklyReports', 'customCategories'], (result) => {
         if (!result.events) chrome.storage.local.set({ events: {} });
         if (!result.stats) chrome.storage.local.set({ stats: { minutesOnline: 0 } });
         if (!result.lastDate) chrome.storage.local.set({ lastDate: new Date().toLocaleDateString() });
-        if (!result.usageStats) chrome.storage.local.set({ usageStats: {} });
+        if (!result.dailyUsageStats) chrome.storage.local.set({ dailyUsageStats: {} });
         if (!result.weeklyReports) chrome.storage.local.set({ weeklyReports: {} });
+        if (!result.customCategories) chrome.storage.local.set({ customCategories: {} });
     });
 });
 
@@ -82,28 +83,47 @@ function trackActiveTab() {
                 const domain = extractDomain(url);
 
                 if (domain && !url.startsWith('chrome://') && !url.startsWith('chrome-extension://')) {
-                    chrome.storage.local.get(['usageStats'], (res) => {
-                        const usageStats = res.usageStats || {};
+                    const today = new Date().toLocaleDateString();
 
-                        if (!usageStats[domain]) {
-                            usageStats[domain] = {
+                    chrome.storage.local.get(['dailyUsageStats', 'customCategories'], (res) => {
+                        const dailyStats = res.dailyUsageStats || {};
+                        const customCats = res.customCategories || {};
+
+                        // Initialize today's stats if not exists
+                        if (!dailyStats[today]) {
+                            dailyStats[today] = {};
+                        }
+
+                        // Initialize domain for today if not exists
+                        if (!dailyStats[today][domain]) {
+                            // Check custom category first, fall back to auto-categorization
+                            const category = customCats[domain] || categorizeDomain(domain);
+
+                            dailyStats[today][domain] = {
                                 totalSeconds: 0,
                                 visits: 1,
                                 lastVisit: new Date().toISOString(),
-                                category: categorizeDomain(domain)
+                                category: category
                             };
                         } else {
                             // Check if this is a new visit (different from last tracked domain)
                             if (currentTabUrl !== domain) {
-                                usageStats[domain].visits += 1;
+                                dailyStats[today][domain].visits += 1;
                             }
                         }
 
                         // Add 60 seconds (1 minute) since alarm fires every minute
-                        usageStats[domain].totalSeconds += 60;
-                        usageStats[domain].lastVisit = new Date().toISOString();
+                        dailyStats[today][domain].totalSeconds += 60;
+                        dailyStats[today][domain].lastVisit = new Date().toISOString();
 
-                        chrome.storage.local.set({ usageStats });
+                        // Keep only last 7 days
+                        const dates = Object.keys(dailyStats).sort().reverse();
+                        const last7Days = {};
+                        dates.slice(0, 7).forEach(date => {
+                            last7Days[date] = dailyStats[date];
+                        });
+
+                        chrome.storage.local.set({ dailyUsageStats: last7Days });
 
                         // Update current tab for next check
                         currentTabUrl = domain;
@@ -181,8 +201,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 // Generate weekly report
 function generateWeeklyReport() {
-    chrome.storage.local.get(['usageStats', 'weeklyReports'], (res) => {
-        const usageStats = res.usageStats || {};
+    chrome.storage.local.get(['dailyUsageStats', 'weeklyReports'], (res) => {
+        const dailyStats = res.dailyUsageStats || {};
         const weeklyReports = res.weeklyReports || {};
 
         // Calculate week number
@@ -190,25 +210,39 @@ function generateWeeklyReport() {
         const weekNum = getWeekNumber(now);
         const weekKey = `${now.getFullYear()}-W${weekNum}`;
 
-        // Get top 5 sites
-        const sortedSites = Object.entries(usageStats)
-            .sort((a, b) => b[1].totalSeconds - a[1].totalSeconds)
+        // Get all unique domains from the week and aggregate their time
+        const uniqueDomains = new Set();
+        const domainTotalTime = {};
+        const domainCategories = {};
+
+        Object.values(dailyStats).forEach(dayStats => {
+            Object.entries(dayStats).forEach(([domain, data]) => {
+                uniqueDomains.add(domain);
+                domainTotalTime[domain] = (domainTotalTime[domain] || 0) + data.totalSeconds;
+                domainCategories[domain] = data.category;
+            });
+        });
+
+        // Get top 5 sites by total time
+        const sortedSites = Object.entries(domainTotalTime)
+            .sort((a, b) => b[1] - a[1])
             .slice(0, 5)
-            .map(([domain, data]) => ({
+            .map(([domain, time]) => ({
                 domain,
-                time: data.totalSeconds,
-                category: data.category
+                time,
+                category: domainCategories[domain]
             }));
 
         // Calculate total time and productive time
-        const totalTime = Object.values(usageStats).reduce((sum, data) => sum + data.totalSeconds, 0);
-        const productiveTime = Object.entries(usageStats)
-            .filter(([_, data]) => ['work', 'productivity'].includes(data.category))
-            .reduce((sum, [_, data]) => sum + data.totalSeconds, 0);
+        const totalTime = Object.values(domainTotalTime).reduce((sum, time) => sum + time, 0);
+        const productiveTime = Object.entries(domainTotalTime)
+            .filter(([domain]) => ['work', 'productivity'].includes(domainCategories[domain]))
+            .reduce((sum, [_, time]) => sum + time, 0);
 
         weeklyReports[weekKey] = {
             startDate: getWeekStart(now).toISOString(),
             endDate: now.toISOString(),
+            uniqueSitesCount: uniqueDomains.size, // ✅ Unique sites count!
             topSites: sortedSites,
             totalTime,
             productiveTime,

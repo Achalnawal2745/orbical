@@ -4,6 +4,7 @@ class Calendar {
         this.selectedDate = new Date(); // Defaults to today
         this.events = {}; // { "YYYY-MM-DD": [ { id, title, time, color, description } ] }
         this.currentView = 'month'; // 'month', 'week', 'focus'
+        this.currentViewDay = 0; // 0 = today, -1 = yesterday, -2 = 2 days ago, etc.
 
         // Clock Preference
         this.is24Hour = localStorage.getItem('is24Hour') !== 'false'; // Default true
@@ -87,7 +88,35 @@ class Calendar {
         document.getElementById('cancelBtn').addEventListener('click', () => this.closePanel());
         document.getElementById('eventForm').addEventListener('submit', (e) => this.saveEvent(e));
         document.getElementById('closeDetailsPanel').addEventListener('click', () => this.closeDetailsPanel());
-        document.getElementById('backdrop').addEventListener('click', () => { this.closePanel(); this.closeDetailsPanel(); });
+        document.getElementById('backdrop').addEventListener('click', () => {
+            this.closePanel();
+            this.closeDetailsPanel();
+            this.closeSettingsPanel();
+        });
+
+        // Day navigation for usage stats
+        const prevDayBtn = document.getElementById('prevDay');
+        const nextDayBtn = document.getElementById('nextDay');
+
+        if (prevDayBtn) {
+            prevDayBtn.addEventListener('click', () => {
+                if (this.currentViewDay > -6) { // Max 7 days back
+                    this.currentViewDay--;
+                    this.updateDayLabel();
+                    this.renderUsageStats();
+                }
+            });
+        }
+
+        if (nextDayBtn) {
+            nextDayBtn.addEventListener('click', () => {
+                if (this.currentViewDay < 0) {
+                    this.currentViewDay++;
+                    this.updateDayLabel();
+                    this.renderUsageStats();
+                }
+            });
+        }
     }
 
     /* ========== NAVIGATION ========== */
@@ -511,6 +540,53 @@ class Calendar {
         this.setupStatsRefresh('online');
     }
 
+    closeSettingsPanel() {
+        const panel = document.getElementById('settingsPanel');
+        const backdrop = document.getElementById('backdrop');
+
+        panel.classList.remove('active');
+        backdrop.classList.remove('active');
+
+        // Stop auto-refresh when panel closes
+        if (this.statsRefreshInterval) {
+            clearInterval(this.statsRefreshInterval);
+            this.statsRefreshInterval = null;
+        }
+
+        // Reset to today when closing
+        this.currentViewDay = 0;
+    }
+
+    updateDayLabel() {
+        const dayLabel = document.getElementById('currentDayLabel');
+        const dayTitle = document.getElementById('dayStatsTitle');
+        const prevBtn = document.getElementById('prevDay');
+        const nextBtn = document.getElementById('nextDay');
+
+        let labelText = '';
+        let titleText = '';
+
+        if (this.currentViewDay === 0) {
+            labelText = 'Today';
+            titleText = "Today's Statistics";
+        } else if (this.currentViewDay === -1) {
+            labelText = 'Yesterday';
+            titleText = "Yesterday's Statistics";
+        } else {
+            const viewDate = new Date();
+            viewDate.setDate(viewDate.getDate() + this.currentViewDay);
+            labelText = viewDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            titleText = `${labelText} Statistics`;
+        }
+
+        if (dayLabel) dayLabel.textContent = labelText;
+        if (dayTitle) dayTitle.textContent = titleText;
+
+        // Enable/disable buttons
+        if (prevBtn) prevBtn.disabled = this.currentViewDay <= -6;
+        if (nextBtn) nextBtn.disabled = this.currentViewDay >= 0;
+    }
+
     setupStatsRefresh(tabType) {
         // Clear existing interval
         if (this.statsRefreshInterval) {
@@ -592,19 +668,25 @@ class Calendar {
                 weeklyReportsList.innerHTML = '<div class="loading-spinner">Loading...</div>';
             }
 
-            chrome.storage.local.get(['usageStats', 'weeklyReports'], (res) => {
-                const usageStats = res.usageStats || {};
+            // Calculate the date to view based on currentViewDay offset
+            const viewDate = new Date();
+            viewDate.setDate(viewDate.getDate() + (this.currentViewDay || 0));
+            const dateStr = viewDate.toLocaleDateString();
+
+            chrome.storage.local.get(['dailyUsageStats', 'weeklyReports'], (res) => {
+                const dailyStats = res.dailyUsageStats || {};
+                const todayStats = dailyStats[dateStr] || {};
                 const weeklyReports = res.weeklyReports || {};
 
-                // All-time stats
-                const totalSites = Object.keys(usageStats).length;
-                const totalSeconds = Object.values(usageStats).reduce((sum, data) => sum + data.totalSeconds, 0);
+                // Stats for the viewed day
+                const totalSites = Object.keys(todayStats).length;
+                const totalSeconds = Object.values(todayStats).reduce((sum, data) => sum + data.totalSeconds, 0);
 
                 document.getElementById('totalSitesVisited').textContent = totalSites;
                 document.getElementById('totalBrowsingTime').textContent = this.formatSeconds(totalSeconds);
 
-                // Top 10 sites
-                this.renderTopSites(usageStats);
+                // Top 10 sites for the viewed day
+                this.renderTopSites(todayStats);
 
                 // Weekly reports
                 this.renderWeeklyReports(weeklyReports);
@@ -618,41 +700,101 @@ class Calendar {
     renderTopSites(usageStats) {
         const topSitesList = document.getElementById('topSitesList');
 
-        if (Object.keys(usageStats).length === 0) {
-            topSitesList.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">📊</div>
-                    <div class="empty-state-text">No browsing data yet.<br>Start browsing to see your top sites!</div>
-                </div>
-            `;
+        if (!usageStats || Object.keys(usageStats).length === 0) {
+            topSitesList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">No sites tracked yet.<br>Start browsing to see your usage!</div></div>';
             return;
         }
 
+        // Sort by time, show ALL sites (removed .slice(0, 10))
         const sortedSites = Object.entries(usageStats)
-            .sort((a, b) => b[1].totalSeconds - a[1].totalSeconds)
-            .slice(0, 10);
+            .sort((a, b) => b[1].totalSeconds - a[1].totalSeconds);
 
         const maxTime = sortedSites[0][1].totalSeconds;
 
-        topSitesList.innerHTML = sortedSites.map(([domain, data], index) => {
-            const progressPct = (data.totalSeconds / maxTime) * 100;
-            return `
-                <div class="site-item">
-                    <div class="site-rank">${index + 1}</div>
-                    <div class="site-info">
-                        <div class="site-name">${domain}</div>
-                        <div class="site-meta">
-                            <span class="category-badge ${data.category}">${data.category}</span>
-                            <span>${data.visits} visits</span>
-                        </div>
-                        <div class="site-progress">
-                            <div class="site-progress-fill" style="width: ${progressPct}%"></div>
-                        </div>
+        topSitesList.innerHTML = '';
+        sortedSites.forEach(([domain, data], index) => {
+            const percentage = (data.totalSeconds / maxTime) * 100;
+            const siteItem = document.createElement('div');
+            siteItem.className = 'site-item';
+            siteItem.style.cursor = 'pointer';
+
+            // Click to customize category
+            siteItem.onclick = () => {
+                this.openCategorySelector(domain, data.category);
+            };
+
+            siteItem.innerHTML = `
+                <div class="site-rank">${index + 1}</div>
+                <div class="site-info">
+                    <div class="site-name">${domain}</div>
+                    <div class="site-meta">
+                        <span class="category-badge ${data.category}">${data.category}</span>
+                        <span>${data.visits} visits</span>
                     </div>
-                    <div class="site-time">${this.formatSeconds(data.totalSeconds)}</div>
+                    <div class="site-progress">
+                        <div class="site-progress-fill" style="width: ${percentage}%"></div>
+                    </div>
                 </div>
+                <div class="site-time">${this.formatSeconds(data.totalSeconds)}</div>
             `;
-        }).join('');
+            topSitesList.appendChild(siteItem);
+        });
+    }
+
+    openCategorySelector(domain, currentCategory) {
+        const modal = document.getElementById('categorySelectorOverlay');
+        const siteName = document.getElementById('categoryModalSiteName');
+        const closeBtn = document.getElementById('closeCategoryModal');
+
+        siteName.textContent = domain;
+        modal.classList.add('active');
+
+        // Highlight current category
+        document.querySelectorAll('.category-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.dataset.category === currentCategory);
+        });
+
+        // Close button
+        closeBtn.onclick = () => {
+            modal.classList.remove('active');
+        };
+
+        // Click outside to close
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        };
+
+        // Handle category selection
+        document.querySelectorAll('.category-option').forEach(btn => {
+            btn.onclick = () => {
+                const newCategory = btn.dataset.category;
+                this.saveCustomCategory(domain, newCategory);
+                modal.classList.remove('active');
+                this.renderUsageStats(); // Refresh
+            };
+        });
+    }
+
+    saveCustomCategory(domain, category) {
+        chrome.storage.local.get(['customCategories', 'dailyUsageStats'], (res) => {
+            const customCategories = res.customCategories || {};
+            const dailyStats = res.dailyUsageStats || {};
+
+            // Save custom category
+            customCategories[domain] = category;
+
+            // Update all existing stats for this domain across all days
+            Object.keys(dailyStats).forEach(date => {
+                if (dailyStats[date][domain]) {
+                    dailyStats[date][domain].category = category;
+                }
+            });
+
+            chrome.storage.local.set({ customCategories, dailyUsageStats: dailyStats });
+            console.log(`Updated ${domain} to category: ${category}`);
+        });
     }
 
     renderWeeklyReports(weeklyReports) {

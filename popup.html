@@ -386,9 +386,16 @@
 
             <!-- Usage Analytics Tab -->
             <div class="stats-container tab-content" id="usageStatsTab">
-                <!-- All-Time Stats -->
+                <!-- Day Navigation -->
+                <div class="usage-day-nav">
+                    <button class="day-nav-btn" id="prevDay">←</button>
+                    <span class="current-day" id="currentDayLabel">Today</span>
+                    <button class="day-nav-btn" id="nextDay">→</button>
+                </div>
+
+                <!-- Daily Stats -->
                 <div class="usage-summary">
-                    <h4>All-Time Statistics</h4>
+                    <h4 id="dayStatsTitle">Today's Statistics</h4>
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-value" id="totalSitesVisited">0</div>
@@ -403,7 +410,7 @@
 
                 <!-- Top Sites List -->
                 <div class="top-sites-section">
-                    <h4>Top 10 Sites</h4>
+                    <h4>All Sites</h4>
                     <div id="topSitesList" class="top-sites-list">
                         <!-- Sites injected by JS -->
                     </div>
@@ -418,7 +425,69 @@
                 </div>
             </div>
         </div>
+
+        <!-- Category Selector Modal -->
+        <div class="modal-overlay" id="categorySelectorOverlay">
+            <div class="category-modal">
+                <div class="panel-header">
+                    <h3>Customize Category</h3>
+                    <button class="icon-btn" id="closeCategoryModal">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="site-info-display">
+                        <div class="site-icon">🌐</div>
+                        <div>
+                            <div class="site-name-large" id="categoryModalSiteName">youtube.com</div>
+                            <div class="site-meta">Choose how to categorize this site</div>
+                        </div>
+                    </div>
+
+                    <div class="category-options">
+                        <button class="category-option" data-category="social">
+                            <span class="category-icon">👥</span>
+                            <span>Social</span>
+                        </button>
+                        <button class="category-option" data-category="work">
+                            <span class="category-icon">💼</span>
+                            <span>Work</span>
+                        </button>
+                        <button class="category-option" data-category="entertainment">
+                            <span class="category-icon">🎬</span>
+                            <span>Entertainment</span>
+                        </button>
+                        <button class="category-option" data-category="education">
+                            <span class="category-icon">📚</span>
+                            <span>Education</span>
+                        </button>
+                        <button class="category-option" data-category="shopping">
+                            <span class="category-icon">🛒</span>
+                            <span>Shopping</span>
+                        </button>
+                        <button class="category-option" data-category="news">
+                            <span class="category-icon">📰</span>
+                            <span>News</span>
+                        </button>
+                        <button class="category-option" data-category="productivity">
+                            <span class="category-icon">⚡</span>
+                            <span>Productivity</span>
+                        </button>
+                        <button class="category-option" data-category="other">
+                            <span class="category-icon">📁</span>
+                            <span>Other</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
+
     <script src="datepicker.js"></script>
     <script src="calendar.js"></script>
 </body>
