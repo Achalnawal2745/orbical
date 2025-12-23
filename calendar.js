@@ -800,48 +800,173 @@ class Calendar {
     renderWeeklyReports(weeklyReports) {
         const reportsList = document.getElementById('weeklyReportsList');
 
-        if (Object.keys(weeklyReports).length === 0) {
-            reportsList.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">📅</div>
-                    <div class="empty-state-text">No weekly reports yet.<br>Reports are generated every Sunday!</div>
-                </div>
-            `;
+        // Check if chrome.storage is available
+        if (!chrome || !chrome.storage) {
+            console.error('Chrome storage not available');
+            reportsList.innerHTML = '<div class="empty-state"><div class="empty-state-text">Error loading reports</div></div>';
             return;
         }
 
-        const sortedReports = Object.entries(weeklyReports)
-            .sort((a, b) => b[0].localeCompare(a[0])); // Sort by week key descending
+        // Generate current week progress card
+        chrome.storage.local.get(['dailyUsageStats'], (res) => {
+            if (chrome.runtime.lastError) {
+                console.error('Storage error:', chrome.runtime.lastError);
+                // Continue with just the completed weeks
+                res = { dailyUsageStats: {} };
+            }
 
-        reportsList.innerHTML = sortedReports.map(([weekKey, report]) => {
-            return `
-                <div class="weekly-report-card">
-                    <div class="report-header">
-                        <div class="report-week">Week ${weekKey}</div>
-                        <div class="report-score">${report.productivityScore}% Productive</div>
-                    </div>
-                    <div class="report-stats">
-                        <div class="report-stat">
-                            <div class="report-stat-value">${this.formatSeconds(report.totalTime)}</div>
-                            <div class="report-stat-label">Total Time</div>
+            const dailyStats = res.dailyUsageStats || {};
+
+            // Helper: Format dates
+            const formatDate = (date, includeYear = false) => {
+                const options = { month: 'short', day: 'numeric' };
+                if (includeYear) options.year = 'numeric';
+                return date.toLocaleDateString('en-US', options);
+            };
+
+            // Calculate current week data
+            const now = new Date();
+            const currentWeekStart = new Date(now);
+            currentWeekStart.setDate(now.getDate() - now.getDay()); // This week's Sunday
+            currentWeekStart.setHours(0, 0, 0, 0);
+
+            const currentWeekEnd = new Date(currentWeekStart);
+            currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // This week's Saturday
+
+            // Aggregate current week data by looking up keys directly
+            const domainTotalTime = {};
+            const domainCategories = {};
+
+            // Iterate through every day of the current week (Sun to Sat)
+            const checkDate = new Date(currentWeekStart);
+            while (checkDate <= currentWeekEnd) {
+                const dateKey = checkDate.toLocaleDateString();
+                const dayStats = dailyStats[dateKey];
+
+                if (dayStats) {
+                    Object.entries(dayStats).forEach(([domain, data]) => {
+                        domainTotalTime[domain] = (domainTotalTime[domain] || 0) + data.totalSeconds;
+                        domainCategories[domain] = data.category;
+                    });
+                }
+
+                // Next day
+                checkDate.setDate(checkDate.getDate() + 1);
+            }
+
+            const totalTime = Object.values(domainTotalTime).reduce((sum, time) => sum + time, 0);
+            const productiveTime = Object.entries(domainTotalTime)
+                .filter(([domain]) => ['work', 'productivity'].includes(domainCategories[domain]))
+                .reduce((sum, [_, time]) => sum + time, 0);
+
+            const topSites = Object.entries(domainTotalTime)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([domain, time]) => ({ domain, time }));
+
+            const productivityScore = totalTime > 0 ? Math.round((productiveTime / totalTime) * 100) : 0;
+
+            const currentYear = new Date().getFullYear();
+            const showYear = currentWeekEnd.getFullYear() !== currentYear;
+            const dateRange = `${formatDate(currentWeekStart)} - ${formatDate(currentWeekEnd, showYear)}`;
+
+            // Build current week card
+            let currentWeekCard = '';
+            if (totalTime > 0) {
+                currentWeekCard = `
+                    <div class="weekly-report-card current-week">
+                        <div class="report-header">
+                            <div class="report-week">${dateRange}</div>
+                            <div class="report-score in-progress">In Progress</div>
                         </div>
-                        <div class="report-stat">
-                            <div class="report-stat-value">${this.formatSeconds(report.productiveTime)}</div>
-                            <div class="report-stat-label">Productive</div>
-                        </div>
-                    </div>
-                    <div class="report-top-sites">
-                        <div class="report-top-sites-title">Top 5 Sites</div>
-                        ${report.topSites.map(site => `
-                            <div class="report-site">
-                                <span class="report-site-name">${site.domain}</span>
-                                <span class="report-site-time">${this.formatSeconds(site.time)}</span>
+                        <div class="report-stats">
+                            <div class="report-stat">
+                                <div class="report-stat-value">${this.formatSeconds(totalTime)}</div>
+                                <div class="report-stat-label">Total Time</div>
                             </div>
-                        `).join('')}
+                            <div class="report-stat">
+                                <div class="report-stat-value">${productivityScore}%</div>
+                                <div class="report-stat-label">Productive</div>
+                            </div>
+                        </div>
+                        <div class="report-top-sites">
+                            <div class="report-top-sites-title">Top 5 Sites</div>
+                            ${topSites.map(site => `
+                                <div class="report-site">
+                                    <span class="report-site-name">${site.domain}</span>
+                                    <span class="report-site-time">${this.formatSeconds(site.time)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                </div>
-            `;
-        }).join('');
+                `;
+            }
+
+            // Build completed weeks cards (exclude current week)
+            let completedWeeksHTML = '';
+            if (Object.keys(weeklyReports).length > 0) {
+                // Get current week start date string for robust comparison
+                const currentWeekStartStr = formatDate(currentWeekStart);
+
+                const sortedReports = Object.entries(weeklyReports)
+                    .filter(([weekKey, report]) => {
+                        // Exclude if start date matches current week start
+                        const reportStart = new Date(report.startDate);
+                        return formatDate(reportStart) !== currentWeekStartStr;
+                    })
+                    .sort((a, b) => b[0].localeCompare(a[0]));
+
+                completedWeeksHTML = sortedReports.map(([weekKey, report]) => {
+                    const startDate = new Date(report.startDate);
+                    const endDate = new Date(startDate);
+                    endDate.setDate(startDate.getDate() + 6);
+
+                    const currentYear = new Date().getFullYear();
+                    const showYear = endDate.getFullYear() !== currentYear;
+                    const dateRange = `${formatDate(startDate)} - ${formatDate(endDate, showYear)}`;
+
+                    return `
+                        <div class="weekly-report-card">
+                            <div class="report-header">
+                                <div class="report-week">${dateRange}</div>
+                                <div class="report-score">${report.productivityScore}% Productive</div>
+                            </div>
+                            <div class="report-stats">
+                                <div class="report-stat">
+                                    <div class="report-stat-value">${this.formatSeconds(report.totalTime)}</div>
+                                    <div class="report-stat-label">Total Time</div>
+                                </div>
+                                <div class="report-stat">
+                                    <div class="report-stat-value">${this.formatSeconds(report.productiveTime)}</div>
+                                    <div class="report-stat-label">Productive</div>
+                                </div>
+                            </div>
+                            <div class="report-top-sites">
+                                <div class="report-top-sites-title">Top 5 Sites</div>
+                                ${report.topSites.map(site => `
+                                    <div class="report-site">
+                                        <span class="report-site-name">${site.domain}</span>
+                                        <span class="report-site-time">${this.formatSeconds(site.time)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Combine current week + completed weeks
+            if (currentWeekCard || completedWeeksHTML) {
+                reportsList.innerHTML = currentWeekCard + completedWeeksHTML;
+            } else {
+                reportsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📅</div>
+                        <div class="empty-state-text">No weekly reports yet.<br>Reports are generated every Sunday!</div>
+                    </div>
+                `;
+            }
+        });
     }
 
     formatSeconds(seconds) {
@@ -859,6 +984,15 @@ class Calendar {
         const min = m % 60;
         return `${h}h ${min}m`;
     }
+
+    getWeekNumber(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+
 
     deleteEvent(dateStr, index) {
         if (!confirm('Delete this event?')) return;

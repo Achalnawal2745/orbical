@@ -14,7 +14,7 @@ const CATEGORIES = {
     productivity: ['docs.google.com', 'sheets.google.com', 'drive.google.com', 'calendar.google.com']
 };
 
-let currentTabUrl = null;
+// Removed: currentTabUrl now stored in chrome.storage to survive service worker restarts
 let lastTrackTime = Date.now();
 let isUserIdle = false;
 let chromeLeftTime = null; // Track when Chrome loses focus
@@ -25,13 +25,14 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.alarms.create(WEEKLY_REPORT_ALARM, { when: getNextSunday(), periodInMinutes: 10080 }); // Weekly
 
     // Initialize storage
-    chrome.storage.local.get(['events', 'stats', 'lastDate', 'dailyUsageStats', 'weeklyReports', 'customCategories'], (result) => {
+    chrome.storage.local.get(['events', 'stats', 'lastDate', 'dailyUsageStats', 'weeklyReports', 'customCategories', 'lastTrackedDomain'], (result) => {
         if (!result.events) chrome.storage.local.set({ events: {} });
         if (!result.stats) chrome.storage.local.set({ stats: { minutesOnline: 0 } });
         if (!result.lastDate) chrome.storage.local.set({ lastDate: new Date().toLocaleDateString() });
         if (!result.dailyUsageStats) chrome.storage.local.set({ dailyUsageStats: {} });
         if (!result.weeklyReports) chrome.storage.local.set({ weeklyReports: {} });
         if (!result.customCategories) chrome.storage.local.set({ customCategories: {} });
+        if (!result.lastTrackedDomain) chrome.storage.local.set({ lastTrackedDomain: null });
     });
 });
 
@@ -85,7 +86,9 @@ function trackActiveTab() {
                 if (domain && !url.startsWith('chrome://') && !url.startsWith('chrome-extension://')) {
                     const today = new Date().toLocaleDateString();
 
-                    chrome.storage.local.get(['dailyUsageStats', 'customCategories'], (res) => {
+                    // Get last tracked domain from storage (persists across service worker restarts)
+                    chrome.storage.local.get(['dailyUsageStats', 'customCategories', 'lastTrackedDomain'], (res) => {
+                        const previousDomain = res.lastTrackedDomain || null;
                         const dailyStats = res.dailyUsageStats || {};
                         const customCats = res.customCategories || {};
 
@@ -107,7 +110,7 @@ function trackActiveTab() {
                             };
                         } else {
                             // Check if this is a new visit (different from last tracked domain)
-                            if (currentTabUrl !== domain) {
+                            if (previousDomain !== domain) {
                                 dailyStats[today][domain].visits += 1;
                             }
                         }
@@ -123,10 +126,11 @@ function trackActiveTab() {
                             last7Days[date] = dailyStats[date];
                         });
 
-                        chrome.storage.local.set({ dailyUsageStats: last7Days });
-
-                        // Update current tab for next check
-                        currentTabUrl = domain;
+                        // Save both stats and current domain
+                        chrome.storage.local.set({
+                            dailyUsageStats: last7Days,
+                            lastTrackedDomain: domain
+                        });
                     });
                 }
             }
@@ -295,8 +299,46 @@ function checkEvents() {
         let hasUpdates = false;
 
         todayEvents.forEach(evt => {
+            // Check if already notified for this event
+            const midnightNotifId = `${evt.id}-midnight`;
+            const morningNotifId = `${evt.id}-morning`;
+
+            // Handle ALL DAY events (no time set)
+            if (!evt.time) {
+                // Notify at midnight (00:00)
+                if (currentHours === 0 && currentMinutes === 0 && !newNotified.includes(midnightNotifId)) {
+                    chrome.notifications.create(`evt-${midnightNotifId}`, {
+                        type: 'basic',
+                        iconUrl: chrome.runtime.getURL('images/logo.png'),
+                        title: `📅 All Day: ${evt.title}`,
+                        message: evt.description || "All-day event today!",
+                        priority: 1,
+                        requireInteraction: true  // Must be manually dismissed
+                    });
+                    newNotified.push(midnightNotifId);
+                    hasUpdates = true;
+                    console.log(`Midnight notification sent for all-day event: ${evt.title}`);
+                }
+
+                // Notify at 9 AM (09:00)
+                if (currentHours === 9 && currentMinutes === 0 && !newNotified.includes(morningNotifId)) {
+                    chrome.notifications.create(`evt-${morningNotifId}`, {
+                        type: 'basic',
+                        iconUrl: chrome.runtime.getURL('images/logo.png'),
+                        title: `☀️ Reminder: ${evt.title}`,
+                        message: evt.description || "Don't forget about this all-day event!",
+                        priority: 2,
+                        requireInteraction: true
+                    });
+                    newNotified.push(morningNotifId);
+                    hasUpdates = true;
+                    console.log(`Morning notification sent for all-day event: ${evt.title}`);
+                }
+                return;
+            }
+
+            // Handle TIMED events (existing logic)
             if (newNotified.includes(evt.id)) return;
-            if (!evt.time) return;
 
             const [evtH, evtM] = evt.time.split(':').map(Number);
             const evtTimeVal = evtH * 60 + evtM;
