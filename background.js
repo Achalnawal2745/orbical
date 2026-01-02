@@ -14,7 +14,7 @@ const CATEGORIES = {
     productivity: ['docs.google.com', 'sheets.google.com', 'drive.google.com', 'calendar.google.com']
 };
 
-// Removed: currentTabUrl now stored in chrome.storage to survive service worker restarts
+// Track domain in storage for persistence
 let lastTrackTime = Date.now();
 let isUserIdle = false;
 let chromeLeftTime = null; // Track when Chrome loses focus
@@ -86,7 +86,7 @@ function trackActiveTab() {
                 if (domain && !url.startsWith('chrome://') && !url.startsWith('chrome-extension://')) {
                     const today = new Date().toLocaleDateString();
 
-                    // Get last tracked domain from storage (persists across service worker restarts)
+                    // Get persistent state
                     chrome.storage.local.get(['dailyUsageStats', 'customCategories', 'lastTrackedDomain'], (res) => {
                         const previousDomain = res.lastTrackedDomain || null;
                         const dailyStats = res.dailyUsageStats || {};
@@ -246,7 +246,7 @@ function generateWeeklyReport() {
         weeklyReports[weekKey] = {
             startDate: getWeekStart(now).toISOString(),
             endDate: now.toISOString(),
-            uniqueSitesCount: uniqueDomains.size, // ✅ Unique sites count!
+            uniqueSitesCount: uniqueDomains.size, // Unique sites count
             topSites: sortedSites,
             totalTime,
             productiveTime,

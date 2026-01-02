@@ -11,12 +11,8 @@ class Calendar {
 
         // Load events then render
         this.loadEvents();
-        // Assuming initTheme() is a new method or intended to be added elsewhere,
-        // as it's not present in the original code. For now, I'll comment it out
-        // or assume it's a placeholder for a future addition.
-        // If it's meant to replace the dark-theme logic, that needs to be clarified.
-        // For now, I'll keep the existing dark-theme logic and add initTheme() as a placeholder.
-        this.initTheme(); // Placeholder for new theme initialization
+        this.loadEvents();
+        this.initTheme(); // Initialize theme
 
         // Start Clock Immediately
         this.updateClock();
@@ -208,11 +204,6 @@ class Calendar {
         ];
 
         const centerDate = new Date(this.selectedDate);
-
-        // If we are NOT animating out, just render. 
-        // We will assume render is called fresh.
-        // To support "Animate Out", we need to handle it in the Click listener, not here.
-        // But here we can add "Pop In" for new elements.
 
         container.innerHTML = '';
 
@@ -1285,10 +1276,8 @@ class Calendar {
     /* HELPERS */
     selectDay(date, events) {
         this.selectedDate = date;
+        this.selectedDate = date;
         if (events && events.length > 0) {
-            // Switch to week view to see details in this new design? 
-            // Or use the old panel? 
-            // Reference image implies Week View IS the details view.
             this.switchView('week');
         } else {
             this.openAddEventPanel(date);
@@ -1511,9 +1500,7 @@ class Calendar {
                     parentId: parentId
                 };
 
-                // If editing single implementation, we'd replace. 
-                // For this Recurrence implementation: Always Add New.
-                // (Constraint: "Edit Series" is complex, we just "Create Series" for now)
+                // Add event to the date
                 events[dKey].push(newEvent);
             });
 
@@ -1528,7 +1515,7 @@ class Calendar {
 
                 // If on Focus or Week, force refresh them
                 if (this.currentView === 'focus') this.renderFocus();
-                if (this.currentView === 'week') this.renderWeekOrbital(); // Typo fix: we have renderWeekOrbital
+                if (this.currentView === 'week') this.renderWeekOrbital();
             });
         });
     }
@@ -1536,8 +1523,7 @@ class Calendar {
     generateRecurringDates(start, end, freq, weekDays) {
         let dates = [];
         let current = new Date(start);
-        // Correct for timezone offset issues by setting time to Noon?
-        // Actually YYYY-MM-DD input is clean. Let's force "T12:00:00" to avoid rollover.
+        // Normalize time to noon to avoid timezone shifts
         current.setHours(12, 0, 0, 0);
 
         const endDate = new Date(end);
