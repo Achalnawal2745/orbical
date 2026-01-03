@@ -662,11 +662,31 @@ class Calendar {
             // Calculate the date to view based on currentViewDay offset
             const viewDate = new Date();
             viewDate.setDate(viewDate.getDate() + (this.currentViewDay || 0));
-            const dateStr = viewDate.toLocaleDateString();
+            const dateStr = this.getDateKey ? this.getDateKey(viewDate) : viewDate.toLocaleDateString();
 
             chrome.storage.local.get(['dailyUsageStats', 'weeklyReports'], (res) => {
                 const dailyStats = res.dailyUsageStats || {};
-                const todayStats = dailyStats[dateStr] || {};
+
+                // FALLBACK LOGIC: Try both YYYY-MM-DD and Locale String formats
+                // This handles migration and the case where background worker hasn't reloaded yet
+                const key1 = this.getDateKey ? this.getDateKey(viewDate) : null;
+                const key2 = viewDate.toLocaleDateString();
+
+                const data1 = (key1 && dailyStats[key1]) || {};
+                const data2 = dailyStats[key2] || {};
+
+                // Merge data1 and data2
+                const todayStats = { ...data1 };
+                Object.entries(data2).forEach(([domain, stats]) => {
+                    if (!todayStats[domain]) {
+                        todayStats[domain] = { ...stats };
+                    } else {
+                        // Merge existing domain stats
+                        todayStats[domain].totalSeconds += stats.totalSeconds;
+                        todayStats[domain].visits += stats.visits;
+                    }
+                });
+
                 const weeklyReports = res.weeklyReports || {};
 
                 // Stats for the viewed day
@@ -788,6 +808,14 @@ class Calendar {
         });
     }
 
+    // Helper: Get YYYY-MM-DD date key (Storage Lookup)
+    getDateKey(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
     renderWeeklyReports(weeklyReports) {
         const reportsList = document.getElementById('weeklyReportsList');
 
@@ -802,13 +830,12 @@ class Calendar {
         chrome.storage.local.get(['dailyUsageStats'], (res) => {
             if (chrome.runtime.lastError) {
                 console.error('Storage error:', chrome.runtime.lastError);
-                // Continue with just the completed weeks
                 res = { dailyUsageStats: {} };
             }
 
             const dailyStats = res.dailyUsageStats || {};
 
-            // Helper: Format dates
+            // Internal Helper: Format dates (Visual only)
             const formatDate = (date, includeYear = false) => {
                 const options = { month: 'short', day: 'numeric' };
                 if (includeYear) options.year = 'numeric';
@@ -831,10 +858,24 @@ class Calendar {
             // Iterate through every day of the current week (Sun to Sat)
             const checkDate = new Date(currentWeekStart);
             while (checkDate <= currentWeekEnd) {
-                const dateKey = checkDate.toLocaleDateString();
-                const dayStats = dailyStats[dateKey];
+                // FALLBACK LOGIC: Look up BOTH formats
+                const key1 = this.getDateKey(checkDate);
+                const key2 = checkDate.toLocaleDateString();
 
-                if (dayStats) {
+                const dayStats1 = dailyStats[key1] || {};
+                const dayStats2 = dailyStats[key2] || {};
+
+                // Merge stats for this day
+                const dayStats = { ...dayStats1 };
+                Object.entries(dayStats2).forEach(([domain, stats]) => {
+                    if (!dayStats[domain]) {
+                        dayStats[domain] = { ...stats };
+                    } else {
+                        dayStats[domain].totalSeconds += stats.totalSeconds;
+                    }
+                });
+
+                if (Object.keys(dayStats).length > 0) {
                     Object.entries(dayStats).forEach(([domain, data]) => {
                         domainTotalTime[domain] = (domainTotalTime[domain] || 0) + data.totalSeconds;
                         domainCategories[domain] = data.category;

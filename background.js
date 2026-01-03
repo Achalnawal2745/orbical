@@ -66,6 +66,14 @@ function extractDomain(url) {
     }
 }
 
+// Helper: Get YYYY-MM-DD date key (Locale Independent)
+function getDateKey(date = new Date()) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
 // Track active tab - Called every 1 minute by alarm
 function trackActiveTab() {
     if (isUserIdle) return;
@@ -84,7 +92,7 @@ function trackActiveTab() {
                 const domain = extractDomain(url);
 
                 if (domain && !url.startsWith('chrome://') && !url.startsWith('chrome-extension://')) {
-                    const today = new Date().toLocaleDateString();
+                    const today = getDateKey(); // Use YYYY-MM-DD
 
                     // Get persistent state
                     chrome.storage.local.get(['dailyUsageStats', 'customCategories', 'lastTrackedDomain'], (res) => {
@@ -119,7 +127,7 @@ function trackActiveTab() {
                         dailyStats[today][domain].totalSeconds += 60;
                         dailyStats[today][domain].lastVisit = new Date().toISOString();
 
-                        // Keep only last 7 days
+                        // Keep only last 7 days (Sort by Key YYYY-MM-DD, which is alphabetically correct)
                         const dates = Object.keys(dailyStats).sort().reverse();
                         const last7Days = {};
                         dates.slice(0, 7).forEach(date => {
