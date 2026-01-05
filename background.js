@@ -261,8 +261,8 @@ function generateWeeklyReport() {
             productivityScore: Math.round((productiveTime / totalTime) * 100) || 0
         };
 
-        // Keep only last 12 weeks
-        const reportKeys = Object.keys(weeklyReports).sort().reverse().slice(0, 12);
+        // Keep only last 4 weeks (1 month)
+        const reportKeys = Object.keys(weeklyReports).sort().reverse().slice(0, 4);
         const trimmedReports = {};
         reportKeys.forEach(key => trimmedReports[key] = weeklyReports[key]);
 
