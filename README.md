@@ -57,7 +57,7 @@ OrbiCal is a stunning calendar extension designed with a futuristic "Neon Glass"
 ### From Source
 1. **Download**: Clone or download this repository
    ```bash
-   git clone https://github.com/yourusername/orbical.git
+   git clone https://github.com/Achalnawal2745/orbical.git
    ```
 2. **Open Chrome Extensions**: Navigate to `chrome://extensions/`
 3. **Enable Developer Mode**: Toggle the switch in the top right corner
